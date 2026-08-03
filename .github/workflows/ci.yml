@@ -6,9 +6,13 @@ on:
   push:
     branches: [ main ]
 
+# Pipeline sequencial: 1. Check -> 2. Build -> 3. Test -> 4. Dependency-Check
+# -> 5. Trivy -> 6. SonarQube. Cada etapa so comeca depois da anterior
+# terminar (needs), pra falhar rapido e deixar o grafo do Actions claro.
+
 jobs:
-  check-branch-atualizada:
-    name: Check -> branch atualizada com a main
+  check:
+    name: "1. Check: branch atualizada com a main"
     # So faz sentido em PR (branch feature/* vs main). Em push direto na main
     # nao ha "outra branch" para comparar.
     if: github.event_name == 'pull_request'
@@ -37,7 +41,12 @@ jobs:
       # tiver sido marcada por alguem no time.
 
   build:
-    name: Check -> Build -> Test
+    name: "2. Build"
+    needs: check
+    # "check" so roda em PR (se roda em push, fica "skipped"). Sem essa
+    # condicao, "build" tambem seria pulado em todo push na main, porque por
+    # padrao o GitHub Actions pula jobs cujo "needs" foi pulado.
+    if: always() && (needs.check.result == 'success' || needs.check.result == 'skipped')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -50,22 +59,11 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build (skip tests)
-        run: mvn -B -DskipTests clean package
+      - name: Build (compila e empacota, sem rodar testes)
+        run: mvn -B clean package -DskipTests
 
-      - name: Test + cobertura (JaCoCo)
-        run: mvn -B test
-
-      - name: Upload relatorio de cobertura (JaCoCo)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: jacoco-report
-          path: target/site/jacoco/
-          retention-days: 14
-
-  security-scan:
-    name: Analise de vulnerabilidades (dependencias + imagem Docker)
+  test:
+    name: "3. Test"
     needs: build
     runs-on: ubuntu-latest
     steps:
@@ -79,8 +77,34 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      # Cacheia a base de dados de CVEs da NVD entre execucoes (ela e grande e
-      # lenta para baixar do zero toda hora). Renovada a cada execucao.
+      - name: Test + cobertura (JaCoCo)
+        run: mvn -B test
+
+      - name: Upload relatorio de cobertura (JaCoCo)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+          retention-days: 14
+
+  dependency-check:
+    name: "4. Dependency-Check (vulnerabilidades das dependencias)"
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      # Cacheia a base de dados de CVEs da NVD entre execucoes (ela e grande
+      # e lenta pra baixar do zero toda hora).
       - name: Cache base OWASP Dependency-Check
         uses: actions/cache@v4
         with:
@@ -94,11 +118,18 @@ jobs:
           mvn -B org.owasp:dependency-check-maven:12.2.2:check \
             -DnvdApiKey=${{ secrets.NVD_API_KEY }}
         # NVD_API_KEY e opcional (o scan roda sem ele, so fica mais lento por
-        # causa do rate limit publico da NVD). Cadastrar em Settings > Secrets
-        # and variables > Actions quando tiver o token gratuito da NVD.
+        # causa do rate limit publico da NVD).
         continue-on-error: true
 
-      - name: Upload relatorio OWASP Dependency-Check
+      - name: Converter relatorio para o formato de issues externas do SonarQube
+        run: |
+          mkdir -p external-reports
+          python3 .github/scripts/dependency_check_to_sonar.py \
+            target/dependency-check-report.json \
+            external-reports/sonar-external-issues.json
+        continue-on-error: true
+
+      - name: Upload relatorio OWASP Dependency-Check (HTML/JSON)
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -106,16 +137,33 @@ jobs:
           path: target/dependency-check-report.*
           retention-days: 30
 
+      - name: Upload issues convertidas para o SonarQube
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-sonar-issues
+          path: external-reports/sonar-external-issues.json
+          retention-days: 30
+          if-no-files-found: warn
+
+  trivy:
+    name: "5. Trivy (vulnerabilidades da imagem Docker)"
+    needs: dependency-check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Build da imagem Docker (para o scan do Trivy)
         run: docker build -t oficina-mecanica-api:ci .
 
-      # Repositorio e privado -> nao usamos "format: sarif" + upload para a aba
-      # Security do GitHub, porque code scanning em repo privado exige GitHub
-      # Advanced Security (recurso pago, nao incluso no Student Developer
-      # Pack). Em vez disso geramos um relatorio em tabela/JSON como artifact
-      # do proprio workflow, que qualquer integrante do time consegue baixar.
+      # Repositorio e privado -> nao usamos "format: sarif" + upload para a
+      # aba Security do GitHub, porque code scanning em repo privado exige
+      # GitHub Advanced Security (recurso pago, nao incluso no Student
+      # Developer Pack). Em vez disso geramos um relatorio em tabela/JSON
+      # como artifact do proprio workflow.
       - name: Trivy - scan da imagem Docker (tabela legivel)
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: oficina-mecanica-api:ci
           format: table
@@ -124,7 +172,7 @@ jobs:
           exit-code: '0'
 
       - name: Trivy - scan da imagem Docker (JSON, para o relatorio final)
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: oficina-mecanica-api:ci
           format: json
@@ -143,8 +191,8 @@ jobs:
           retention-days: 30
 
   sonar:
-    name: Sonar (SonarQube local self-hosted)
-    needs: build
+    name: "6. SonarQube (qualidade + vulnerabilidades)"
+    needs: trivy
     # Roda tanto em push na main quanto em Pull Request, por pedido do time
     # (a maquina com o SonarQube local + runner vai ficar sempre ligada).
     # Duas limitacoes REAIS da Community Edition que isso nao remove (nao
@@ -160,7 +208,7 @@ jobs:
     #    Quality Gate, sem contaminar o dashboard da main.
     # Consequencia visivel: nao ha comentario/decoracao automatica no PR do
     # GitHub (isso e Developer Edition+); o resultado aparece como sucesso/
-    # falha do check "Sonar" e no dashboard local do SonarQube.
+    # falha do check "SonarQube" e no dashboard local do SonarQube.
     if: github.event_name == 'push' || github.event_name == 'pull_request'
     runs-on: [self-hosted]
     timeout-minutes: 15
@@ -175,6 +223,17 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Baixar issues do Dependency-Check (etapa 4) para importar no Sonar
+        uses: actions/download-artifact@v4
+        with:
+          name: dependency-check-sonar-issues
+          path: external-reports/
+        continue-on-error: true
+        # Fica em "external-reports/" (fora de target/) de proposito: o
+        # "mvn clean" do step abaixo apaga o target/ inteiro antes de
+        # analisar - se baixassemos o arquivo pra dentro de target/, o
+        # clean apagaria ele antes do Sonar conseguir ler.
+
       - name: Definir projectKey (separado por PR, unico para a main)
         id: sonar_project
         run: |
@@ -186,16 +245,29 @@ jobs:
 
       - name: SonarQube Scan (instancia local via Docker Compose)
         run: |
-          mvn -B clean verify sonar:sonar \
+          mvn -B clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar \
             -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
             -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.projectKey=${{ steps.sonar_project.outputs.key }} \
+            -Dsonar.externalIssuesReportPaths=external-reports/sonar-external-issues.json \
             -Dsonar.qualitygate.wait=true
         # "clean" aqui e importante: runner self-hosted REUTILIZA a mesma
         #   pasta de trabalho (_work) entre execucoes (ao contrario dos
         #   runners do GitHub, que sao uma maquina nova a cada job) - sem
         #   "clean" o target/ de um PR anterior podia vazar/misturar dados
         #   de cobertura na analise seguinte.
+        # Goal totalmente qualificado (nao "sonar:sonar" curto) de proposito:
+        #   o prefixo curto "sonar" so resolve se ~/.m2/settings.xml tiver o
+        #   grupo org.sonarsource.scanner.maven cadastrado - isso depende de
+        #   configuracao pessoal da maquina de quem roda o runner. Chamando
+        #   com groupId:artifactId:versao:goal funciona em qualquer maquina,
+        #   sem depender de settings.xml de ninguem.
+        # sonar.externalIssuesReportPaths: importa as vulnerabilidades do
+        #   Dependency-Check (etapa 4) como issues dentro do proprio
+        #   dashboard do SonarQube, sem precisar de plugin (o plugin da
+        #   comunidade pra isso esta sem manutencao desde 2024). Se o
+        #   arquivo nao existir (download falhou/sem vulnerabilidade), o
+        #   Sonar so ignora essa propriedade.
         # SONAR_HOST_URL: seu valor real e http://sonarqube.local:9000 - so
         #   precisa ser alcancavel pelo runner self-hosted (mesma maquina),
         #   nao pelo GitHub, por isso um host local funciona aqui.

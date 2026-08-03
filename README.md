@@ -90,25 +90,31 @@ mvn test
 Cobertura minima exigida pelo edital: 80% nos dominios criticos (relatorio
 JaCoCo gerado em `target/site/jacoco/index.html` apos `mvn test`).
 
-## Analise de vulnerabilidades
+## Pipeline de CI (`.github/workflows/ci.yml`)
 
-O CI (`.github/workflows/ci.yml`, job `security-scan`) roda automaticamente
-em todo PR/push para `main`:
+O CI roda em ordem sequencial (cada etapa so comeca depois que a anterior
+termina) em todo PR/push para `main`:
 
-- **OWASP Dependency-Check** (plugin Maven `org.owasp:dependency-check-maven`)
-  - varre as dependencias do projeto (Spring Boot, driver do Postgres, JWT,
-    etc.) contra a base de CVEs da NVD.
-- **Trivy** - varre a imagem Docker final (SO + dependencias da aplicacao)
-  em busca de vulnerabilidades conhecidas.
+1. **Check** - branch atualizada com a main (so em PR).
+2. **Build** - compila e empacota (`mvn clean package -DskipTests`).
+3. **Test** - roda os testes e gera cobertura JaCoCo.
+4. **Dependency-Check** - OWASP Dependency-Check varre as dependencias do
+   projeto (Spring Boot, driver do Postgres, JWT, etc.) contra a base de
+   CVEs da NVD.
+5. **Trivy** - varre a imagem Docker final (SO + dependencias da aplicacao)
+   em busca de vulnerabilidades conhecidas.
+6. **SonarQube** - analise de qualidade de codigo, com as vulnerabilidades
+   da etapa 4 importadas junto (ver abaixo).
 
-Como o repositorio e privado, os relatorios nao vao para a aba "Security" do
-GitHub (isso exigiria GitHub Advanced Security, que e pago em repo privado) -
-eles ficam disponiveis como **artifacts do workflow** (aba Actions > run mais
-recente > Artifacts): `dependency-check-report` (HTML/JSON) e `trivy-report`
-(tabela/JSON). Esses arquivos sao a base para o "Relatorio de vulnerabilidades"
-exigido nos entregaveis da Fase 1.
+Como o repositorio e privado, os relatorios de vulnerabilidade nao vao para
+a aba "Security" do GitHub (isso exigiria GitHub Advanced Security, que e
+pago em repo privado) - eles ficam disponiveis como **artifacts do
+workflow** (aba Actions > run mais recente > Artifacts):
+`dependency-check-report` (HTML/JSON) e `trivy-report` (tabela/JSON). Esses
+arquivos sao a base para o "Relatorio de vulnerabilidades" exigido nos
+entregaveis da Fase 1.
 
-Para rodar localmente:
+Para rodar o Dependency-Check localmente:
 
 ```bash
 mvn org.owasp:dependency-check-maven:12.2.2:check -DnvdApiKey=SEU_TOKEN
@@ -119,11 +125,11 @@ mvn org.owasp:dependency-check-maven:12.2.2:check -DnvdApiKey=SEU_TOKEN
 
 O time optou por um **SonarQube Community Edition local**, rodando via
 Docker Compose na maquina de quem configurou (mesma abordagem ja usada com
-GitLab CI). Job `sonar` no `.github/workflows/ci.yml`:
+GitLab CI). Job "6. SonarQube" no `.github/workflows/ci.yml`:
 
 - Roda em um **runner self-hosted** (registrado na maquina onde o SonarQube
   local esta de pe) - e o que permite o GitHub Actions, que roda na nuvem,
-  alcancar um `http://localhost:9000` que so existe naquela maquina. A
+  alcancar um `http://sonarqube.local:9000` que so existe naquela maquina. A
   maquina precisa ficar ligada (com o runner e o SonarQube ativos) sempre
   que alguem for abrir/atualizar um PR ou dar merge na main.
 - Roda **tanto em push na main quanto em Pull Request**. Duas limitacoes
@@ -138,9 +144,18 @@ GitLab CI). Job `sonar` no `.github/workflows/ci.yml`:
      cada um com sua propria Quality Gate.
 - Nao ha comentario/decoracao automatica no PR do GitHub (isso e recurso
   pago, Developer Edition+) - o resultado aparece como sucesso/falha do
-  check "Sonar" no PR e no dashboard local (`http://localhost:9000`).
+  check "SonarQube" no PR e no dashboard local (`http://sonarqube.local:9000`).
 - Ainda falha o job se a Quality Gate nao passar
   (`-Dsonar.qualitygate.wait=true`), mesmo sem comentario inline no PR.
+- **Vulnerabilidades do Dependency-Check aparecem dentro do proprio
+  dashboard do SonarQube**, junto com os problemas de qualidade de codigo.
+  Isso NAO usa o plugin da comunidade `dependency-check-sonar-plugin` (sem
+  release desde ago/2024, com bugs conhecidos em versoes recentes do
+  SonarQube) - em vez disso, o job "4. Dependency-Check" converte o
+  relatorio pro formato nativo de importacao de issues externas do
+  SonarQube (`sonar.externalIssuesReportPaths`,
+  `.github/scripts/dependency_check_to_sonar.py`) e o job "6. SonarQube"
+  baixa esse arquivo convertido e passa pro scanner.
 
 Configuracao necessaria (feita uma vez, fora do codigo):
 
@@ -148,10 +163,10 @@ Configuracao necessaria (feita uma vez, fora do codigo):
    local (GitHub > repo > Settings > Actions > Runners > New self-hosted
    runner - o proprio GitHub gera o comando de instalacao e o token de
    registro).
-2. No SonarQube local (`http://localhost:9000`), gerar um token em
+2. No SonarQube local (`http://sonarqube.local:9000`), gerar um token em
    *My Account > Security*.
 3. Cadastrar em Settings > Secrets and variables > Actions:
-   - `SONAR_HOST_URL` (ex.: `http://localhost:9000`)
+   - `SONAR_HOST_URL` (ex.: `http://sonarqube.local:9000`)
    - `SONAR_TOKEN` (o token gerado no passo 2 - usar `sonar.token`, nao
      `sonar.login`, que esta descontinuado)
 

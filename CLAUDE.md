@@ -129,22 +129,42 @@ mvn test                      # roda testes + gera relatorio JaCoCo
 - PR para `main` precisa de aprovacao de outro integrante do time.
 - Quem abre o PR nao pode aprovar/mergear o proprio PR (o GitHub ja bloqueia
   isso por padrao).
-- CI (`.github/workflows/ci.yml`) tem 4 jobs:
-  1. `check-branch-atualizada` - so roda em PR, falha se a branch estiver
-     desatualizada em relacao a `main` (equivalente ao "Require branches to
-     be up to date before merging" da branch protection do GitHub).
-  2. `build` - Check -> Build -> Test (roda em runner do GitHub, sempre
-     disponivel).
-  3. `security-scan` - roda OWASP Dependency-Check (dependencias) e Trivy
-     (imagem Docker), publica os relatorios como artifacts do workflow
-     (repo e privado, entao nao usamos a aba Security do GitHub - isso
-     exigiria GitHub Advanced Security pago). Esses artifacts sao a base do
-     "Relatorio de vulnerabilidades" exigido nos entregaveis da Fase 1.
-  4. `sonar` - SonarQube **Community Edition local** (docker-compose na
-     maquina de quem configurou), acessado via **runner self-hosted**. Por
-     decisao explicita do usuario, roda tanto em push na main quanto em
-     Pull Request (a maquina do Sonar fica sempre ligada). Duas limitacoes
-     reais da CE que continuam valendo:
+- CI (`.github/workflows/ci.yml`) tem 6 jobs, em cadeia sequencial via
+  `needs` (cada um so comeca depois que o anterior termina):
+  1. `check` - "1. Check: branch atualizada com a main". So roda em PR,
+     falha se a branch estiver desatualizada em relacao a `main`
+     (equivalente ao "Require branches to be up to date before merging" da
+     branch protection do GitHub). Em push direto na main fica "skipped" -
+     por isso `build` tem `if: always() && (needs.check.result == 'success'
+     || needs.check.result == 'skipped')`, senao ele tambem seria pulado.
+  2. `build` - "2. Build". So compila/empacota (`mvn clean package
+     -DskipTests`), roda em runner do GitHub.
+  3. `test` - "3. Test". Roda os testes + gera cobertura JaCoCo, publica
+     `jacoco-report` como artifact.
+  4. `dependency-check` - "4. Dependency-Check (vulnerabilidades das
+     dependencias)". OWASP Dependency-Check contra a base da NVD. Alem do
+     relatorio HTML/JSON de sempre, converte o resultado pro formato de
+     issues externas do SonarQube via
+     `.github/scripts/dependency_check_to_sonar.py` e publica como artifact
+     `dependency-check-sonar-issues` - e esse arquivo que o job `sonar`
+     consome depois. NAO reintroduzir o plugin
+     `dependency-check-sonar-plugin` da comunidade (sem release desde
+     ago/2024, com bugs conhecidos em versoes recentes do SonarQube).
+  5. `trivy` - "5. Trivy (vulnerabilidades da imagem Docker)". Builda a
+     imagem Docker e escaneia, publica `trivy-report` como artifact. Repo e
+     privado, entao NAO usar `format: sarif` + upload pra aba Security do
+     GitHub (exigiria GitHub Advanced Security pago) - manter como artifact
+     de workflow.
+  6. `sonar` - "6. SonarQube (qualidade + vulnerabilidades)". SonarQube
+     **Community Edition local** (docker-compose na maquina de quem
+     configurou), acessado via **runner self-hosted**. Por decisao
+     explicita do usuario, roda tanto em push na main quanto em Pull
+     Request (a maquina do Sonar fica sempre ligada). Baixa o artifact
+     `dependency-check-sonar-issues` do job 4 ANTES do `mvn clean` (pasta
+     `external-reports/`, fora de `target/`, porque o `clean` apaga
+     `target/` - se baixasse pra la, o arquivo seria apagado antes do scan
+     ler ele) e passa via `-Dsonar.externalIssuesReportPaths=...`.
+     Limitacoes reais da Community Edition que continuam valendo:
      - Nao suporta `sonar.branch.name` (Developer Edition+ apenas) -> por
        isso NUNCA adicionar esse parametro no step do PR.
      - Sem branch nativa, cada PR usa projectKey proprio
@@ -152,12 +172,17 @@ mvn test                      # roda testes + gera relatorio JaCoCo
        "Definir projectKey") para nao sobrescrever a analise da main -
        manter essa logica se for mexer nesse job.
      - Sem comentario/decoracao automatica no PR (recurso pago) - so o
-       status do check "Sonar" e o dashboard local mostram o resultado.
-     `SONAR_HOST_URL` e `SONAR_TOKEN` sao secrets do repo; usar sempre
-     `sonar.token` (nao `sonar.login`, descontinuado). Se quiser marcar
-     `sonar` como required status check na branch protection, o time
-     assumiu o risco de PR travar quando essa maquina especifica estiver
-     offline - avisar se isso mudar.
+       status do check "SonarQube" e o dashboard local mostram o resultado.
+     - Goal chamado de forma totalmente qualificada
+       (`org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar`,
+       NAO o prefixo curto `sonar:sonar`) porque o prefixo curto so resolve
+       se `~/.m2/settings.xml` de quem roda o runner tiver o grupo
+       `org.sonarsource.scanner.maven` cadastrado - nao depender disso.
+     `SONAR_HOST_URL` (`http://sonarqube.local:9000`) e `SONAR_TOKEN` sao
+     secrets do repo; usar sempre `sonar.token` (nao `sonar.login`,
+     descontinuado). Se quiser marcar `sonar` como required status check na
+     branch protection, o time assumiu o risco de PR travar quando essa
+     maquina especifica estiver offline - avisar se isso mudar.
 
 ## O que NAO fazer sem perguntar
 
