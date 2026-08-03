@@ -1,0 +1,213 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  check-branch-atualizada:
+    name: Check -> branch atualizada com a main
+    # So faz sentido em PR (branch feature/* vs main). Em push direto na main
+    # nao ha "outra branch" para comparar.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verificar se a branch do PR esta atualizada com a main
+        run: |
+          git fetch origin main
+          if git merge-base --is-ancestor origin/main HEAD; then
+            echo "OK: a branch esta atualizada com a main."
+          else
+            echo "ERRO: esta branch esta desatualizada em relacao a main."
+            echo "Rode 'git fetch origin && git merge main' (ou rebase) na sua branch e faca push de novo."
+            exit 1
+          fi
+
+      # Observacao: o GitHub tambem tem uma opcao nativa equivalente em
+      # Settings > Branches > branch protection rule > "Require branches to
+      # be up to date before merging". Mantemos os dois: esse step da
+      # feedback explicito no PR mesmo se a opcao de branch protection nao
+      # tiver sido marcada por alguem no time.
+
+  build:
+    name: Check -> Build -> Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build (skip tests)
+        run: mvn -B -DskipTests clean package
+
+      - name: Test + cobertura (JaCoCo)
+        run: mvn -B test
+
+      - name: Upload relatorio de cobertura (JaCoCo)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report
+          path: target/site/jacoco/
+          retention-days: 14
+
+  security-scan:
+    name: Analise de vulnerabilidades (dependencias + imagem Docker)
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      # Cacheia a base de dados de CVEs da NVD entre execucoes (ela e grande e
+      # lenta para baixar do zero toda hora). Renovada a cada execucao.
+      - name: Cache base OWASP Dependency-Check
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository/org/owasp/dependency-check-data
+          key: dependency-check-data-${{ github.run_id }}
+          restore-keys: |
+            dependency-check-data-
+
+      - name: OWASP Dependency-Check (scan das dependencias do projeto)
+        run: |
+          mvn -B org.owasp:dependency-check-maven:12.2.2:check \
+            -DnvdApiKey=${{ secrets.NVD_API_KEY }}
+        # NVD_API_KEY e opcional (o scan roda sem ele, so fica mais lento por
+        # causa do rate limit publico da NVD). Cadastrar em Settings > Secrets
+        # and variables > Actions quando tiver o token gratuito da NVD.
+        continue-on-error: true
+
+      - name: Upload relatorio OWASP Dependency-Check
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependency-check-report
+          path: target/dependency-check-report.*
+          retention-days: 30
+
+      - name: Build da imagem Docker (para o scan do Trivy)
+        run: docker build -t oficina-mecanica-api:ci .
+
+      # Repositorio e privado -> nao usamos "format: sarif" + upload para a aba
+      # Security do GitHub, porque code scanning em repo privado exige GitHub
+      # Advanced Security (recurso pago, nao incluso no Student Developer
+      # Pack). Em vez disso geramos um relatorio em tabela/JSON como artifact
+      # do proprio workflow, que qualquer integrante do time consegue baixar.
+      - name: Trivy - scan da imagem Docker (tabela legivel)
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          image-ref: oficina-mecanica-api:ci
+          format: table
+          output: trivy-report.txt
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+
+      - name: Trivy - scan da imagem Docker (JSON, para o relatorio final)
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          image-ref: oficina-mecanica-api:ci
+          format: json
+          output: trivy-report.json
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '0'
+
+      - name: Upload relatorio Trivy (imagem Docker)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: |
+            trivy-report.txt
+            trivy-report.json
+          retention-days: 30
+
+  sonar:
+    name: Sonar (SonarQube local self-hosted)
+    needs: build
+    # Roda tanto em push na main quanto em Pull Request, por pedido do time
+    # (a maquina com o SonarQube local + runner vai ficar sempre ligada).
+    # Duas limitacoes REAIS da Community Edition que isso nao remove (nao
+    # tem upgrade pago no projeto, entao convivemos com elas):
+    # 1. CE nao aceita "sonar.branch.name" (erro "Developer Edition or above
+    #    is required") - ou seja, nao existe o conceito nativo de "branch"
+    #    dentro de UM projeto. Por isso NAO usamos sonar.branch.name aqui.
+    # 2. Sem branch nativa, se todo PR escrevesse no mesmo projectKey da
+    #    main, cada scan simplesmente SOBRESCREVERIA a analise da main com o
+    #    codigo do PR, embaralhando o historico de qualidade. Para evitar
+    #    isso, PRs usam um projectKey proprio (um "projeto" separado por PR
+    #    no SonarQube local, ver step abaixo) - assim cada PR tem sua propria
+    #    Quality Gate, sem contaminar o dashboard da main.
+    # Consequencia visivel: nao ha comentario/decoracao automatica no PR do
+    # GitHub (isso e Developer Edition+); o resultado aparece como sucesso/
+    # falha do check "Sonar" e no dashboard local do SonarQube.
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: [self-hosted]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Definir projectKey (separado por PR, unico para a main)
+        id: sonar_project
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "key=oficina-mecanica-api-pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "key=oficina-mecanica-api" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: SonarQube Scan (instancia local via Docker Compose)
+        run: |
+          mvn -B clean verify sonar:sonar \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.projectKey=${{ steps.sonar_project.outputs.key }} \
+            -Dsonar.qualitygate.wait=true
+        # "clean" aqui e importante: runner self-hosted REUTILIZA a mesma
+        #   pasta de trabalho (_work) entre execucoes (ao contrario dos
+        #   runners do GitHub, que sao uma maquina nova a cada job) - sem
+        #   "clean" o target/ de um PR anterior podia vazar/misturar dados
+        #   de cobertura na analise seguinte.
+        # SONAR_HOST_URL: seu valor real e http://sonarqube.local:9000 - so
+        #   precisa ser alcancavel pelo runner self-hosted (mesma maquina),
+        #   nao pelo GitHub, por isso um host local funciona aqui.
+        # SONAR_TOKEN: gerado em My Account > Security no SonarQube local
+        #   (usar sonar.token, sonar.login esta descontinuado desde o
+        #   SonarQube/Scanner 10.x).
+        # Cadastrar os dois em Settings > Secrets and variables > Actions.
+
+  # Regras de branch/PR adicionais (configurar em GitHub > Settings > Branches,
+  # nao via workflow):
+  # 1. Todas as branches devem comecar com "feature/".
+  # 2. Merge para main bloqueado sem aprovacao de outro integrante do time
+  #    (e sem os checks acima passando).
+  # 3. Quem abre o PR nao pode aprovar/mergear o proprio PR (o GitHub ja
+  #    bloqueia isso por padrao).
