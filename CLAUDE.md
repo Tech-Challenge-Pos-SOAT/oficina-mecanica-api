@@ -134,9 +134,15 @@ mvn test                      # roda testes + gera relatorio JaCoCo
   1. `check` - "1. Check: branch atualizada com a main". So roda em PR,
      falha se a branch estiver desatualizada em relacao a `main`
      (equivalente ao "Require branches to be up to date before merging" da
-     branch protection do GitHub). Em push direto na main fica "skipped" -
-     por isso `build` tem `if: always() && (needs.check.result == 'success'
-     || needs.check.result == 'skipped')`, senao ele tambem seria pulado.
+     branch protection do GitHub). Em push direto na main fica "skipped".
+     O GitHub Actions propaga "skipped" em CADEIA por todo o `needs` (nao so
+     pro proximo job - doc oficial: "a failure or skip applies to all jobs
+     in the dependency chain from the point of failure or skip onwards").
+     Por isso `build`, `test`, `dependency-check`, `trivy` e `sonar` TEM
+     TODOS individualmente `if: ${{ !failure() && !cancelled() }}` (o
+     `sonar` combina isso com a condicao de evento que ja tinha) - se algum
+     dia adicionar um novo job nessa cadeia, ele precisa do mesmo guard,
+     senao volta a pular tudo em cascata quando `check` for skipped.
   2. `build` - "2. Build". So compila/empacota (`mvn clean package
      -DskipTests`), roda em runner do GitHub.
   3. `test` - "3. Test". Roda os testes + gera cobertura JaCoCo, publica

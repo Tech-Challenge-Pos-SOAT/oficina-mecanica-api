@@ -43,10 +43,13 @@ jobs:
   build:
     name: "2. Build"
     needs: check
-    # "check" so roda em PR (se roda em push, fica "skipped"). Sem essa
-    # condicao, "build" tambem seria pulado em todo push na main, porque por
-    # padrao o GitHub Actions pula jobs cujo "needs" foi pulado.
-    if: always() && (needs.check.result == 'success' || needs.check.result == 'skipped')
+    # "check" so roda em PR (em push, fica "skipped"). O GitHub Actions
+    # propaga "skipped" em CADEIA por todo o needs (nao so pro proximo job -
+    # doc oficial: "a failure or skip applies to all jobs in the dependency
+    # chain from the point of failure or skip onwards"). Por isso esse guard
+    # precisa estar em TODOS os jobs daqui pra frente (test, dependency-check,
+    # trivy, sonar), nao so aqui - senao skip em cascata ate o fim da cadeia.
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -65,6 +68,7 @@ jobs:
   test:
     name: "3. Test"
     needs: build
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -91,6 +95,7 @@ jobs:
   dependency-check:
     name: "4. Dependency-Check (vulnerabilidades das dependencias)"
     needs: test
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -149,6 +154,7 @@ jobs:
   trivy:
     name: "5. Trivy (vulnerabilidades da imagem Docker)"
     needs: dependency-check
+    if: ${{ !failure() && !cancelled() }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -209,7 +215,7 @@ jobs:
     # Consequencia visivel: nao ha comentario/decoracao automatica no PR do
     # GitHub (isso e Developer Edition+); o resultado aparece como sucesso/
     # falha do check "SonarQube" e no dashboard local do SonarQube.
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    if: ${{ !failure() && !cancelled() && (github.event_name == 'push' || github.event_name == 'pull_request') }}
     runs-on: [self-hosted]
     timeout-minutes: 15
     steps:
