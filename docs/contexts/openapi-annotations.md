@@ -1,6 +1,6 @@
 # OpenAPI 3 + Swagger UI (springdoc-openapi)
 
-Stack: `springdoc-openapi-starter-webmvc-ui:2.x` (Spring Boot 4). Pacotes: `io.swagger.v3.oas.annotations.*` (NOT v2).
+Stack: `springdoc-openapi-starter-webmvc-ui:2.x` (Spring Boot 4). Pacotes: `io.swagger.v3.oas.annotations.*`.
 
 URLs:
 - UI: `http://localhost:8080/swagger-ui.html`
