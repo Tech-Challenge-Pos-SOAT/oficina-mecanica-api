@@ -21,7 +21,7 @@ Leia so o que sua tarefa pede. Cada linha: "quando preciso fazer X → leia Y".
 | Criar controller, use case, repository, DTO | `docs/context/arquitetura-ddd.md` |
 | Escrever ou revisar teste | `docs/context/testes.md` |
 | Converter DTO <-> dominio <-> entidade JPA | `docs/context/mapstruct.md` |
-| Anotar endpoint para o Swagger | `docs/context/swagger.md` |
+| Anotar endpoint com Swagger | `docs/context/documentacao-swagger-openapi.md` |
 | Entender que ferramenta de IA esta ativa | `docs/context/ferramentas-e-skills.md` |
 | Mexer no CI, Sonar, Trivy, Dependency-Check | `CLAUDE.md`, secao "Git / PR" |
 
