@@ -44,8 +44,8 @@ constraint UNIQUE no schema e validacao no construtor do VO.
 6 jobs em cadeia (`.github/workflows/ci.yml`): check → build → test → dependency-check → trivy → sonar
 
 Job novo? Adicione `if: ${{ !failure() && !cancelled() }}` pra nao quebrar cadeia.
+
+Ver `docs/context/ci-cd.md` pra detalhes completos da pipeline.
 </ci-pipeline>
 
 **Regras:** Commit atomico (1 feature/fix); corpo explica **por que**; rebase pra atualizar com main.
-
-Ver `CLAUDE.md` "Git / PR" pra detalhes de CI/Sonar.
