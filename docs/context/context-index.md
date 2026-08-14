@@ -25,21 +25,6 @@ Leia so o que sua tarefa pede. Cada linha: "quando preciso fazer X → leia Y".
 | Entender que ferramenta de IA esta ativa | `docs/context/ferramentas-e-skills.md` |
 | Mexer no CI, Sonar, Trivy, Dependency-Check | `CLAUDE.md`, secao "Git / PR" |
 
-## Mapa de contextos
-
-| Tarefa | Arquivo |
-|---|---|
-| Nome de classe/campo/tabela | `modelo-de-dados.md` (fonte de verdade) |
-| Migration/schema | `modelo-de-dados.md` |
-| Entidade, VO, enum de status | `dominio-e-linguagem-ubiqua.md` + glossario PT→EN |
-| Pacote, layer, estrutura | `arquitetura-ddd.md` |
-| Controller, use case, DTO, repository | `arquitetura-ddd.md` |
-| Teste (VO/regra/use case/JPA/HTTP) | `testes.md` (Boot 4 imports) |
-| MapStruct (DTO ↔ domain ↔ JPA) | `mapstruct.md` |
-| Swagger/OpenAPI | `swagger.md` |
-| Git branch/commit/PR | `git-workflow.md` (CI pipeline) |
-| Ferramentas IA (RTK, Caveman, etc) | `ferramentas-e-skills.md` |
-
 ## Nao decida sozinho
 
 Pergunte se tarefa esbarrar em:
