@@ -1,33 +1,39 @@
-# Indice de decisoes de codigo
+# Context Index
 
 Leia so o que sua tarefa pede. Cada linha: "quando preciso fazer X → leia Y".
 
-**Regras globais:**
-1. Codigo 100% EN; docs/conversa PT. Nomes saem de `modelo-de-dados.md`.
-2. Spring Boot 4 renomeou starters/pacotes — consulte Context7 antes de imports.
-3. Flyway cria schema (ddl-auto=validate). Mudou entidade? Nova migration.
+<regras_globais>
 
-## Tabela de redirecionamento
+1. **Codigo 100% EN**; docs/conversa PT. Nomes saem de `modelo-de-dados.md`.
+2. **Spring Boot 4**: renomeou starters/pacotes — consulte Context7 antes de imports.
+3. **Flyway** cria schema (ddl-auto=validate). Mudou entidade? Nova migration.
 
-| Vou fazer isso... | Leia primeiro |
+</regras_globais>
+
+<tabela_redirecionamento>
+
+| Tarefa | Arquivo |
 |---|---|
-| Qualquer coisa neste repo | `CLAUDE.md` (raiz) - stack, proibicoes, comandos |
-| Criar branch / commit / abrir PR | `docs/context/git-workflow.md` |
-| Descobrir o nome certo de uma classe, campo ou tabela | `docs/context/modelo-de-dados.md` |
-| Escrever migration / mudar schema | `docs/context/modelo-de-dados.md` |
-| Criar/alterar entidade, agregado, VO, enum de status | `docs/context/dominio-e-linguagem-ubiqua.md` |
-| Entender o que um termo do time significa | `docs/context/dominio-e-linguagem-ubiqua.md` (glossario PT->EN) |
-| Decidir em que pacote a classe vai | `docs/context/arquitetura-ddd.md` |
-| Criar controller, use case, repository, DTO | `docs/context/arquitetura-ddd.md` |
-| Escrever ou revisar teste | `docs/context/testes.md` |
-| Converter DTO <-> dominio <-> entidade JPA | `docs/context/mapstruct.md` |
-| Anotar endpoint com OpenAPI/Swagger | `docs/context/openapi-annotations.md` |
-| Entender que ferramenta de IA esta ativa | `docs/context/ferramentas-e-skills.md` |
-| Mexer no CI, Sonar, Trivy, Dependency-Check | `CLAUDE.md`, secao "Git / PR" |
+| Qualquer coisa neste repo (stack, proibicoes, comandos, CI) | `CLAUDE.md` |
+| Nome de classe, campo, tabela, migration ou schema | `modelo-de-dados.md` |
+| Entidade, agregado, VO, enum de status, glossario PT→EN | `dominio-e-linguagem-ubiqua.md` |
+| Pacote, layer, estrutura, controller, use case, DTO, repository | `arquitetura-ddd.md` |
+| Teste (VO/regra/use case/JPA/HTTP), imports Spring Boot 4 | `testes.md` |
+| Converter DTO ↔ domain ↔ JPA entity | `mapstruct.md` |
+| Anotar endpoint com OpenAPI/Swagger, @Tag/@Operation/@Schema | `openapi-annotations.md` |
+| Ferramentas IA ativas (RTK, Caveman, Ponytail, etc) | `ferramentas-e-skills.md` |
+| Branch, commit, PR, CI pipeline | `git-workflow.md` |
 
-## Nao decida sozinho
+</tabela_redirecionamento>
+
+<nao_decida_sozinho>
 
 Pergunte se tarefa esbarrar em:
+
 - **Pontos em aberto** em `dominio-e-linguagem-ubiqua.md` ou `modelo-de-dados.md`
-- Versao Java/Spring Boot/banco; reintroduzir Security/JWT/Lombok; adicionar H2; starter novo
-- Editar migration ja aplicada; renomear pacote raiz; mudar estrutura de camadas
+- Versao Java/Spring Boot/banco
+- Reintroduzir Security/JWT/Lombok; adicionar H2; starter novo
+- Editar migration ja aplicada
+- Renomear pacote raiz; mudar estrutura de camadas
+
+</nao_decida_sozinho>
