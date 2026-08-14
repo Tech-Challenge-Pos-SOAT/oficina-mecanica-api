@@ -1,4 +1,4 @@
-# OpenAPI 3 + Swagger UI (springdoc-openapi 3.0.2)
+# OpenAPI 3 + Swagger UI (springdoc-openapi)
 
 Stack: `springdoc-openapi-starter-webmvc-ui:2.x` (Spring Boot 4). Pacotes: `io.swagger.v3.oas.annotations.*` (NOT v2).
 
@@ -6,12 +6,27 @@ URLs:
 - UI: `http://localhost:8080/swagger-ui.html`
 - JSON (OpenAPI 3.0.3): `http://localhost:8080/v3/api-docs`
 
+<anotacoes_obrigatorias>
+
+- `@Tag` em classe (name, description)
+- `@Operation` em metodo (summary, description)
+- `@ApiResponses` com todos os status reais
+- `@Parameter` em path/query (description, example)
+- `@Schema` em todo campo DTO (description, example)
+
+</anotacoes_obrigatorias>
+
 <regras_projeto>
 
 1. **Anotacoes APENAS em `interfaces.rest`** (controller/DTO). **NUNCA** em `domain` (entidade/agregado/use case).
 2. **Imports corretos**: sempre `io.swagger.v3.oas.annotations.*`. Se ver `io.swagger.annotations`, é Swagger v2 (errado).
 3. **Sem `@SecurityRequirement`**: nao ha autenticacao ativa.
 4. **Sem `@Deprecated`** sem motivo (spam).
+5. `description` explica regra de negocio, nao repete `summary`.
+6. Lista status reais hoje, nao antecipe 401/403.
+7. `example` em todo `@Schema` de campo (concreto, ajuda IA testar).
+8. Path: ingles kebab-case (`/api/service-orders`).
+9. Config global (bean `OpenAPI`) em `infrastructure.config`, uma vez so.
 
 </regras_projeto>
 
@@ -107,7 +122,6 @@ Dai toda `@ApiResponse` com erro usa `@Schema(implementation = ErrorMessage.clas
 
 <referencias>
 
-- Regras curtas: `docs/context/swagger.md`
 - OpenAPI 3.0.3 spec: https://spec.openapis.org/oas/v3.0.3
 - springdoc docs: https://springdoc.org/
 
