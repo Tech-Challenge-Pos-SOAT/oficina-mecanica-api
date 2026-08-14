@@ -92,26 +92,12 @@ fi
 log_section "3. Assistente de IA"
 
 if [ -z "$AI" ]; then
-  if [ "$ASSUME_YES" = "yes" ]; then
-    AI="claude"
-  else
-    echo "Qual assistente voce usa neste repositorio?"
-    echo "  1) Claude Code"
-    echo "  2) Cursor"
-    echo "  3) Ambos"
-    read -r -p "Escolha [1-3]: " escolha
-    case "$escolha" in
-      1) AI="claude" ;;
-      2) AI="cursor" ;;
-      3) AI="ambos" ;;
-      *) log_err "escolha invalida"; exit 1 ;;
-    esac
-  fi
+  AI="claude"
 fi
 
 case "$AI" in
-  claude|cursor|ambos) log_ok "IA escolhida: $AI" ;;
-  *) log_err "valor invalido para --ai: $AI (use claude, cursor ou ambos)"; exit 1 ;;
+  claude) log_ok "IA escolhida: $AI" ;;
+  *) log_err "valor invalido para --ai: $AI (use claude)"; exit 1 ;;
 esac
 
 # ------------------------------------------------------------------
@@ -156,41 +142,15 @@ instalar_claude() {
   log_ok "rule do Claude: CLAUDE.md ja esta versionado na raiz, nada a gerar"
 }
 
-# ------------------------------------------------------------------
-# 5. Cursor: rule gerada a partir do template commitado
-# ------------------------------------------------------------------
-instalar_cursor() {
-  log_section "5. Cursor: rules"
-
-  local template="docs/ai/cursor-rule.mdc.template"
-  local destino=".cursor/rules/00-projeto.mdc"
-
-  if [ ! -f "$template" ]; then
-    log_err "template nao encontrado: $template"
-    return 1
-  fi
-
-  mkdir -p "$(dirname "$destino")"
-  cp "$template" "$destino"
-  log_ok "gerado $destino"
-  log_warn "Cursor nao instala plugin por CLI - RTK/Caveman/Ponytail sao so do Claude Code."
-  log_warn "Para Context7 no Cursor, adicione o MCP em Settings > MCP."
-}
-
-case "$AI" in
-  claude) instalar_claude ;;
-  cursor) instalar_cursor ;;
-  ambos)  instalar_claude || true; instalar_cursor ;;
-esac
+instalar_claude
 
 # ------------------------------------------------------------------
 # 6. Fim
 # ------------------------------------------------------------------
 log_section "Setup finalizado"
 echo "Contexto do projeto (commitado, nao gerado):"
-echo "  docs/context/README.md   <- dicionario: comece por aqui"
-echo "  CLAUDE.md                <- rule do Claude Code"
-echo "  docs/ai/                 <- templates de rule"
+echo "  docs/contexts/context-index.md   <- indice: comece por aqui"
+echo "  CLAUDE.md                        <- rule do Claude Code"
 echo
 echo "Proximos passos:"
 echo "  1. Reinicie o assistente para carregar as rules/plugins."
