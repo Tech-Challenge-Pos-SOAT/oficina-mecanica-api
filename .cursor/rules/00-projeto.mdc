@@ -1,0 +1,72 @@
+---
+description: Regras do projeto Oficina Mecanica API - dicionario de contextos
+globs:
+alwaysApply: true
+---
+
+# Oficina Mecanica API
+
+Back-end DDD de oficina mecanica. Java 21, **Spring Boot 4.0.7**, PostgreSQL 16,
+Flyway, MapStruct 1.6.3, springdoc-openapi, Testcontainers.
+**Sem Lombok. Sem Spring Security / JWT.**
+
+## Codigo e 100% em ingles
+
+Pasta, arquivo, pacote, classe, metodo, variavel, campo, constante, enum, nome de
+teste e path de URL: ingles, sempre. Nunca misturar (`salvarCustomer`,
+`CustomerRepositorio` sao erros). Comentario no codigo tambem em ingles.
+
+Docs, conversa e corpo de commit: portugues.
+
+Excecao unica: o pacote raiz `com.postech.oficinamecanica` permanece em
+portugues. Nao renomear.
+
+Os nomes saem do schema, em `docs/context/modelo-de-dados.md`. E `Material` (nao
+`Part`), `ServiceOrder` (nao `WorkOrder`), `Customer` (nao `Client`).
+
+## Spring Boot 4, nao 3.x
+
+Starters e pacotes de anotacao mudaram. `spring-boot-starter-web` virou
+`spring-boot-starter-webmvc`; `@DataJpaTest` e `@AutoConfigureTestDatabase`
+mudaram de pacote. **Consulte a doc atual antes de escrever import de Spring** -
+nao va de memoria. Os imports corretos estao em `docs/context/testes.md`.
+
+## Flyway cria o schema
+
+`ddl-auto` e `validate`: o Hibernate so confere. Mudou entidade? Migration nova em
+`src/main/resources/db/migration/`. **Nunca edite migration ja aplicada** - o
+Flyway falha por checksum.
+
+## Leia o contexto antes de codar
+
+O indice esta em **`docs/context/README.md`**, com a tabela "vou fazer isso ->
+leia aquilo". Abra o indice primeiro e siga so o arquivo que a tarefa pede:
+
+- nome de classe, campo, tabela ou migration -> `docs/context/modelo-de-dados.md`
+- dominio, glossario, fluxo de status -> `docs/context/dominio-e-linguagem-ubiqua.md`
+- em que pacote a classe vai, controller/use case/repository -> `docs/context/arquitetura-ddd.md`
+- testes -> `docs/context/testes.md`
+- conversao entre camadas -> `docs/context/mapstruct.md`
+- anotacao de endpoint -> `docs/context/swagger.md`
+- ferramentas de IA ativas -> `docs/context/ferramentas-e-skills.md`
+
+## Nao decida sozinho - pergunte
+
+- Os **pontos em aberto** em `dominio-e-linguagem-ubiqua.md` e as perguntas do
+  schema em `modelo-de-dados.md`.
+- Trocar versao de Java, Spring Boot ou banco.
+- Reintroduzir Lombok, Spring Security / JWT, ou adicionar H2.
+- Adicionar starter/dependencia nova.
+- Editar migration ja aplicada.
+- Renomear o pacote raiz ou mudar a estrutura de camadas.
+- Alterar cartao no Trello ou board do Miro - isso e feito fora do codigo.
+- Habilitar upload de SARIF para a aba Security do GitHub (repo privado, sem
+  Advanced Security) - relatorios ficam como artifact.
+
+## Sempre
+
+- Branch `feature/<nome-da-tarefa>`. PR para `main` precisa de aprovacao de outra
+  pessoa.
+- Conventional commits, corpo em portugues.
+- Cobertura minima 80% (JaCoCo).
+- `BigDecimal` para dinheiro, nunca `double`.
