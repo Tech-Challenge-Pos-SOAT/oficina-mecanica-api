@@ -41,19 +41,47 @@ Enums que saem do schema: `ServiceOrderStatus`, `EntityStatus` (ACTIVE/INACTIVE)
   existe tabela de reserva. `material.stock_quantity` e o saldo; a transacao e o
   extrato.
 
-## Perguntas em aberto do schema
+## Entidades — constraints e nuances
 
-Os comentarios com `?` no SQL sao duvidas do time, nao decisoes. Nao resolva
-sozinho:
+### Customer
+- `document` VARCHAR(18): guarda CPF ou CNPJ. Tipo decidido pelo tamanho no VO `Document`.
+- `email` UNIQUE, opcional.
+- `status` ACTIVE/INACTIVE (padrão ACTIVE).
 
-1. `customer.document` guarda CPF e CNPJ na mesma coluna - o VO `Document` aceita
-   os dois e decide o tipo pelo tamanho?
-2. `status` e sempre so `ACTIVE`/`INACTIVE`, em todas as cinco tabelas?
-3. `employee.password` e hash bcrypt? (As dependencias de seguranca foram
-   removidas do `pom.xml` - a tabela existe, a autenticacao nao.)
-4. `service_order_history.author_type` tem exatamente os tres valores
-   `CUSTOMER`/`EMPLOYEE`/`SYSTEM`?
-5. `service_order_history.author_id` fica nulo quando `author_type = SYSTEM`?
-6. `material_transaction.type` tem exatamente `IN`/`OUT`?
-7. `material_transaction.service_order_id` fica nulo em entrada de estoque
-   (compra de fornecedor)?
+### Vehicle
+- `customer_id` FK obrigatória.
+- `plate` UNIQUE.
+- `status` ACTIVE/INACTIVE (padrão ACTIVE).
+
+### Material
+- `price` NUMERIC(10,2): preço de catálogo. Copiado para `service_order_material.price` no momento da inclusão.
+- `stock_quantity` INT: saldo atual.
+- `stock_minimum` INT: limiar para alerta.
+- `status` ACTIVE/INACTIVE (padrão ACTIVE).
+
+### Service
+- `price` NUMERIC(10,2): preço de catálogo. Copiado para `service_order_service.price` no momento da inclusão.
+- `status` ACTIVE/INACTIVE (padrão ACTIVE).
+
+### Employee
+- `name` UNIQUE.
+- `password` VARCHAR(255): hash bcrypt.
+- `role` VARCHAR(50): função do funcionário.
+- `status` ACTIVE/INACTIVE (padrão ACTIVE).
+
+### ServiceOrder (agregado)
+- `customer_id` FK obrigatória: cliente denormalizado. Ao abrir OS, copiar o dono vigente naquele momento (veículo pode trocar de dono depois).
+- `vehicle_id` FK obrigatória.
+- `price` NUMERIC(10,2): nulável até primeira aprovação.
+- `status` VARCHAR(30): transições em `regras-de-negocio.md`.
+
+### ServiceOrderHistory
+- `status` VARCHAR(30): espelho do status da OS naquele momento.
+- `price` NUMERIC(10,2): valor vigente naquela transição. Permite reconstruir histórico de orçamento.
+- `author_type` VARCHAR(20): CUSTOMER / EMPLOYEE / SYSTEM.
+- `author_id` BIGINT: nulo se author_type = SYSTEM.
+
+### MaterialTransaction
+- `type` VARCHAR(10): IN (entrada de estoque) ou OUT (saída por aprovação de OS).
+- `service_order_id` BIGINT FK: nulo em entradas (compra de fornecedor); obrigatório em saídas.
+- Único registro de movimentação; `material.stock_quantity` é sempre o saldo.

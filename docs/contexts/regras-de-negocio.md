@@ -35,7 +35,7 @@
 - Status: ACTIVE/INACTIVE.
 
 ## Funcionário
-- E-mail único.
+- Nome único.
 - Senha hash bcrypt.
 - Status: ACTIVE/INACTIVE. Inativação preserva autoria em histórico.
 
