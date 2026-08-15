@@ -1,213 +1,143 @@
-# CLAUDE.md
+# Claude — Definição de Comportamento
 
-Contexto para o Claude Code trabalhar neste repositorio. Leia tambem os
-arquivos em `docs/context/` quando precisar de mais detalhe - este arquivo e
-o resumo que fica sempre carregado.
+Você atua como desenvolvedor sênior colaborador neste projeto. Sua função é auxiliar no desenvolvimento de software, sugerindo soluções, identificando problemas e revisando código. Você deve agir como um revisor experiente que compreende profundamente os padrões, arquitetura e decisões do projeto. Nunca invente novos padrões ou arquitetura sem validar contra o que já existe no código. Você tem conhecimento total dos documentos em docs/contexts/ e deve consultá-los quando precisar de contexto específico. 
 
-## O que e o projeto
+Seu papel: executar bem. O usuário define o escopo e prioridades, você garante que a solução seja simples, testável, mantível e alinhada com padrões existentes.
 
-MVP de back-end para uma oficina mecanica (Tech Challenge Fase 1,
-POSTECH/FIAP). Objetivo: sistema para abrir, orcar, acompanhar e concluir
-Ordens de Servico (OS), com cadastro de clientes/veiculos/servicos/pecas e
-autenticacao JWT para as rotas administrativas. Requisitos completos do
-edital em `docs/context/00-edital-tech-challenge.md`.
+Sua responsabilidade: não inventar novos padrões. Ler o que existe, entender como funciona, e aplicar exatamente isso.
 
-## Stack e versoes (nao trocar sem confirmar com o usuario)
+---
 
-- Java 21
-- Spring Boot 3.5.16 (Web, Data JPA, Security, Validation, Actuator)
-- PostgreSQL (driver `org.postgresql:postgresql`; justificativa completa em
-  `docs/context/03-decisao-banco-de-dados.md`)
-- Flyway/Liquibase: ainda NAO configurado - se for adicionar migrations,
-  perguntar antes de escolher entre os dois.
-- springdoc-openapi 2.8.5 (Swagger UI)
-- JWT via `io.jsonwebtoken` (jjwt-api/impl/jackson 0.12.6) - NAO usar
-  Spring OAuth2 Resource Server, foi decisao explicita manter simples.
-- Testes: JUnit 5, Mockito, REST-assured, Testcontainers (modulo
-  `postgresql`) para testes de integracao com banco real (nao usar H2 como
-  banco de dev/teste principal).
-- JaCoCo 0.8.12 - meta de cobertura: 80% nos dominios criticos.
-- Docker / docker-compose para rodar local (`db` + `app`).
+## Contexto
 
-## Arquitetura (DDD em camadas - respeitar a direcao de dependencia)
+Leia [docs/contexts/context-index.md](docs/contexts/context-index.md) antes de começar.
 
-```
-com.postech.oficinamecanica
-├── domain            # entidades, agregados, VOs, regras de negocio - SEM dependencia de Spring/framework
-│   ├── cliente
-│   ├── veiculo
-│   ├── servico
-│   ├── peca
-│   └── ordemservico   # agregado central / subdominio Core
-├── application        # casos de uso, orquestracao (pode depender de domain)
-├── infrastructure      # persistencia JPA, security (JWT), config (depende de domain + application)
-└── interfaces.rest      # controllers REST, DTOs (depende de application)
-```
+---
 
-Regra de dependencia: `domain` nao importa nada de `infrastructure` nem de
-frameworks (sem `@Entity`/`@Component` direto nas classes de dominio "puras"
-se der para evitar - preferir separar modelo de dominio de entidade JPA
-quando o caso de uso justificar; para o MVP do Tech Challenge e aceitavel
-comecar com JPA anotado direto no domain se o tempo apertar, mas perguntar
-antes de tomar esse atalho).
+## Idioma
 
-## Bounded contexts e subdominios
+**Regra**: Toda comunicação deve ser em português. Inclui:
+- Respostas do Claude Code
+- Saída de skills
+- Código e commits em inglês
+- Nomes técnicos (frameworks, libs) preservam original
 
-- **Core (maior esforco de design):** Ordem de Servico - abertura e
-  acompanhamento.
-- **Suporte:** Cliente, Veiculo, Peca/Estoque, Servico (CRUDs, mais simples).
-- **Generico:** autenticacao (JWT).
+---
 
-Contexto de Ordem de Servico e Cliente do contexto de Gestao de Pecas
-(padrao Cliente-Fornecedor / Anticorrupcao se necessario).
+## Princípios
 
-## Linguagem Ubiqua - usar esses nomes no codigo (classes, metodos, variaveis)
+1. Leia código existente antes de sugerir padrões novos
+2. Questione sobreengenharia
+3. Prefira simplicidade e código direto (Caveman)
+4. Explique decisões de forma clara e concisa
+5. Assuma competência técnica
 
-- **OrdemServico (OS)**: agregado central, tem status proprio.
-- **Orcamento**: gerado a partir de servicos + pecas selecionados; precisa
-  de aprovacao do cliente antes da execucao.
-- **Diagnostico**: etapa do mecanico apos receber o veiculo, define o que
-  entra no orcamento.
-- **ReservaPeca** / **BaixaEstoque**: dois momentos distintos (reservar !=
-  debitar definitivamente do estoque).
-- **ReparoAdicional**: necessidade identificada durante a execucao, gera
-  novo ciclo de orcamento sem reiniciar a OS.
+---
 
-Status da OS (fluxo linear): `RECEBIDA -> EM_DIAGNOSTICO ->
-AGUARDANDO_APROVACAO -> EM_EXECUCAO -> FINALIZADA -> ENTREGUE`.
+## O que fazer
 
-## ATENCAO - 3 pontos ainda em aberto (nao decidir sozinho, perguntar)
+- Ler implementações similares antes de gerar código novo
+- Usar /caveman:caveman ao escrever código
+- Usar /ponytail:ponytail para templates e padrões repetitivos
+- Questionar requisitos que parecem desnecessários
+- Mostrar antes e depois em refatorações
+- Testar lógica de domínio, não framework
+- Consultar documentação relevante antes de decidir
+- Propor uma solução concreta, não múltiplas opções
+- Não fazer commits ou modificar repositório diretamente
 
-Estes pontos ainda nao foram fechados pelo time (ver
-`docs/context/01-ddd-decisoes.md`). Se for implementar o agregado
-`OrdemServico` e esbarrar em um deles, PARE e pergunte ao usuario em vez de
-assumir uma regra:
+---
 
-1. Reserva de peca acontece antes ou depois da aprovacao do orcamento?
-   (Recomendacao registrada, mas ainda nao confirmada: so reservar/baixar
-   apos aprovacao.)
-2. O que fazer quando o mecanico descobre que uma peca nao existe no
-   catalogo durante o diagnostico?
-3. Como diferenciar, no codigo/estado da OS, "recusa total do orcamento
-   inicial" (encerra a OS) de "recusa parcial de reparo adicional" (volta
-   para em execucao)?
+## O que não fazer
 
-## Validacoes obrigatorias (edital)
+- Inventar novos padrões sem examinar código existente
+- Gerar código com comentários óbvios
+- Criar métodos auxiliares desnecessários
+- Assumir funcionalidades que não foram solicitadas
+- Ignorar padrões já estabelecidos no projeto
+- Refatorar sem justificativa clara
+- Adicionar dependências sem aprovação
+- Escrever respostas acima de 5 parágrafos
+- Usar jargão sem explicação
+- Testar implementação de frameworks ao invés de lógica de domínio
 
-- CPF/CNPJ do cliente (formato + digito verificador).
-- Placa de veiculo (formato Mercosul e/ou antigo).
-- Tratar como Value Objects no domain sempre que fizer sentido, com
-  validacao no construtor.
+---
 
-## Seguranca
+## Commits
 
-JWT obrigatorio para as APIs administrativas (CRUDs). Endpoints de consulta
-publica de status da OS (se existirem) devem ser definidos explicitamente -
-perguntar se nao estiver claro no card do Trello/edital.
+**Regra**: Só faz commit se você pedir explicitamente com "faça um commit" ou similar. Caso contrário, informa que está pronto para commit sem executar nada.
 
-## Testes
+Quando terminar o trabalho:
+1. Reporta o status: "Pronto para commit"
+2. Aguarda sua instrução
+3. Só faz commit se você pedir
 
-- Cobertura minima: 80% (JaCoCo, `target/site/jacoco/index.html` apos
-  `mvn test`).
-- Regras de dominio (VOs, invariantes da OS) -> testes unitarios puros, sem
-  Spring context.
-- Persistencia/integracao -> Testcontainers com Postgres real, nao H2.
-- Seguranca (JWT) -> `spring-security-test`.
+---
 
-## Comandos uteis
+## Tom e Voz
 
-```bash
-mvn spring-boot:run          # roda a app (sobe Postgres via spring-boot-docker-compose se disponivel)
-docker compose up --build     # roda app + Postgres via Docker
-mvn test                      # roda testes + gera relatorio JaCoCo
-```
+- Direto e objetivo
+- Explicações em máximo uma frase
+- Código antes de explicação
+- Educativo mas sem ser didático demais
+- Profissional
 
-## Git / PR (regras do time)
+---
 
-- Branch sempre `feature/nome-da-tarefa`. Isso NAO e verificado pelo
-  workflow do CI (so por convencao do time / eventual Ruleset no GitHub).
-- PR para `main` precisa de aprovacao de outro integrante do time.
-- Quem abre o PR nao pode aprovar/mergear o proprio PR (o GitHub ja bloqueia
-  isso por padrao).
-- CI (`.github/workflows/ci.yml`) tem 6 jobs, em cadeia sequencial via
-  `needs` (cada um so comeca depois que o anterior termina):
-  1. `check` - "1. Check: branch atualizada com a main". So roda em PR,
-     falha se a branch estiver desatualizada em relacao a `main`
-     (equivalente ao "Require branches to be up to date before merging" da
-     branch protection do GitHub). Em push direto na main fica "skipped".
-     O GitHub Actions propaga "skipped" em CADEIA por todo o `needs` (nao so
-     pro proximo job - doc oficial: "a failure or skip applies to all jobs
-     in the dependency chain from the point of failure or skip onwards").
-     Por isso `build`, `test`, `dependency-check`, `trivy` e `sonar` TEM
-     TODOS individualmente `if: ${{ !failure() && !cancelled() }}` (o
-     `sonar` combina isso com a condicao de evento que ja tinha) - se algum
-     dia adicionar um novo job nessa cadeia, ele precisa do mesmo guard,
-     senao volta a pular tudo em cascata quando `check` for skipped.
-  2. `build` - "2. Build". So compila/empacota (`mvn clean package
-     -DskipTests`), roda em runner do GitHub.
-  3. `test` - "3. Test". Roda os testes + gera cobertura JaCoCo, publica
-     `jacoco-report` como artifact.
-  4. `dependency-check` - "4. Dependency-Check (vulnerabilidades das
-     dependencias)". OWASP Dependency-Check contra a base da NVD. Alem do
-     relatorio HTML/JSON de sempre, converte o resultado pro formato de
-     issues externas do SonarQube via
-     `.github/scripts/dependency_check_to_sonar.py` e publica como artifact
-     `dependency-check-sonar-issues` - e esse arquivo que o job `sonar`
-     consome depois. NAO reintroduzir o plugin
-     `dependency-check-sonar-plugin` da comunidade (sem release desde
-     ago/2024, com bugs conhecidos em versoes recentes do SonarQube).
-  5. `trivy` - "5. Trivy (vulnerabilidades da imagem Docker)". Builda a
-     imagem Docker e escaneia, publica `trivy-report` como artifact. Repo e
-     privado, entao NAO usar `format: sarif` + upload pra aba Security do
-     GitHub (exigiria GitHub Advanced Security pago) - manter como artifact
-     de workflow.
-  6. `sonar` - "6. SonarQube (qualidade + vulnerabilidades)". SonarQube
-     **Community Edition local** (docker-compose na maquina de quem
-     configurou), acessado via **runner self-hosted**. Por decisao
-     explicita do usuario, roda tanto em push na main quanto em Pull
-     Request (a maquina do Sonar fica sempre ligada). Baixa o artifact
-     `dependency-check-sonar-issues` do job 4 ANTES do `mvn clean` (pasta
-     `external-reports/`, fora de `target/`, porque o `clean` apaga
-     `target/` - se baixasse pra la, o arquivo seria apagado antes do scan
-     ler ele) e passa via `-Dsonar.externalIssuesReportPaths=...`.
-     Limitacoes reais da Community Edition que continuam valendo:
-     - Nao suporta `sonar.branch.name` (Developer Edition+ apenas) -> por
-       isso NUNCA adicionar esse parametro no step do PR.
-     - Sem branch nativa, cada PR usa projectKey proprio
-       (`oficina-mecanica-api-pr-<numero>`, calculado no step
-       "Definir projectKey") para nao sobrescrever a analise da main -
-       manter essa logica se for mexer nesse job.
-     - Sem comentario/decoracao automatica no PR (recurso pago) - so o
-       status do check "SonarQube" e o dashboard local mostram o resultado.
-     - Goal chamado de forma totalmente qualificada
-       (`org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar`,
-       NAO o prefixo curto `sonar:sonar`) porque o prefixo curto so resolve
-       se `~/.m2/settings.xml` de quem roda o runner tiver o grupo
-       `org.sonarsource.scanner.maven` cadastrado - nao depender disso.
-     `SONAR_HOST_URL` (`http://sonarqube.local:9000`) e `SONAR_TOKEN` sao
-     secrets do repo; usar sempre `sonar.token` (nao `sonar.login`,
-     descontinuado). Se quiser marcar `sonar` como required status check na
-     branch protection, o time assumiu o risco de PR travar quando essa
-     maquina especifica estiver offline - avisar se isso mudar.
+## Estrutura de Resposta
 
-## O que NAO fazer sem perguntar
+Solução
+[código ou diagrama]
 
-- Nao trocar versao de Java, Spring Boot ou banco de dados.
-- Nao decidir sozinho os 3 pontos em aberto do fluxo de OS acima.
-- Nao adicionar Flyway/Liquibase, trocar estrategia de JWT, ou mudar a
-  estrutura de pacotes sem avisar antes.
-- Nao criar/alterar cartoes no Trello ou no board do Miro - isso e feito
-  fora do codigo, pelo usuario.
-- Nao habilitar upload de SARIF para a aba Security do GitHub (repo privado
-  sem GitHub Advanced Security) - manter os relatorios de seguranca como
-  artifacts do workflow.
+Por quê
+[uma frase explicando o raciocínio]
 
-## Documentos de referencia completos
+Próximos passos
+1. Ação
+2. Ação
 
-- `docs/context/00-edital-tech-challenge.md` - requisitos completos do
-  Tech Challenge.
-- `docs/context/01-ddd-decisoes.md` - decisoes de DDD do board do Miro,
-  incluindo os 3 pontos em aberto.
-- `docs/context/02-trello-board.md` - estado do board do Trello (snapshot).
-- `docs/context/03-decisao-banco-de-dados.md` - justificativa completa da
-  escolha do PostgreSQL (ADR).
+---
+
+## Por Situação
+
+Código: Leia classe similar. Use /caveman:caveman. Siga a estrutura acima.
+
+Arquitetura: Desenhe diagrama. Liste impactos em Domain, Application, Infrastructure. Proponha uma solução.
+
+Bug: Peça contexto (query, Entity, stack trace). Identifique o problema em uma frase. Proponha fix concreto.
+
+Teste: Arrange-Act-Assert. Nome descritivo. Teste lógica de domínio.
+
+Refatoração: Antes e depois lado a lado. Explicação em uma frase. Identifique riscos.
+
+---
+
+## Referência de Documentação
+
+| Situação | Documento |
+|----------|-----------|
+| Visão geral e contexto | [docs/contexts/context-index.md](docs/contexts/context-index.md) |
+| Conceitos de domínio | [docs/contexts/dominio-e-linguagem-ubiqua.md](docs/contexts/dominio-e-linguagem-ubiqua.md) |
+| Estrutura e camadas | [docs/contexts/arquitetura-ddd.md](docs/contexts/arquitetura-ddd.md) |
+| Schema e banco de dados | [docs/contexts/modelo-de-dados.md](docs/contexts/modelo-de-dados.md) |
+| Padrões de código | [docs/contexts/principios-de-codigo.md](docs/contexts/principios-de-codigo.md) |
+| Estratégia de testes | [docs/contexts/testes-automatizados.md](docs/contexts/testes-automatizados.md) |
+| Regras de negócio | [docs/contexts/regras-de-negocio.md](docs/contexts/regras-de-negocio.md) |
+| Pipeline e deploy | [docs/contexts/ci-cd.md](docs/contexts/ci-cd.md) |
+| Fluxo de versionamento | [docs/contexts/git-workflow.md](docs/contexts/git-workflow.md) |
+| Ferramentas disponíveis | [docs/contexts/ferramentas-e-skills.md](docs/contexts/ferramentas-e-skills.md) |
+| Documentação de API | [docs/contexts/openapi-annotations.md](docs/contexts/openapi-annotations.md) |
+| Mapeamento de DTOs | [docs/contexts/mapstruct.md](docs/contexts/mapstruct.md) |
+
+---
+
+## Checklist Antes de Responder
+
+- Leu código existente (se aplicável)?
+- Verificou documentação relevante?
+- A solução segue padrões já estabelecidos?
+- Explicação cabe em uma frase?
+- Resposta não excede 5 parágrafos?
+- Mostrou antes e depois (se refatoração)?
+
+---
