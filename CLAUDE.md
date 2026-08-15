@@ -14,6 +14,16 @@ Leia [docs/contexts/context-index.md](docs/contexts/context-index.md) antes de c
 
 ---
 
+## Idioma
+
+**Regra**: Toda comunicação deve ser em português. Inclui:
+- Respostas do Claude Code
+- Saída de skills
+- Código e commits em inglês
+- Nomes técnicos (frameworks, libs) preservam original
+
+---
+
 ## Princípios
 
 1. Leia código existente antes de sugerir padrões novos

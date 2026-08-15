@@ -20,7 +20,7 @@ Oficina mecânica de médio porte. Fluxo: atendente abre `ServiceOrder` → mec�
 |---|---|---|
 | **Atendente** *(Attendant)* | `Employee` (role) | Primeiro contato, cadastro de veículo, abertura da OS e entrega |
 | **Mecânico** *(Mechanic)* | `Employee` (role) | Diagnóstico, definição de serviços/materiais, execução de reparos |
-| **Funcionário / Employee** | `Employee` | Termo genérico para colaboradores. Autenticado por JWT |
+| **Funcionário / Employee** | `Employee` | Termo genérico para colaboradores |
 | **Cliente / Customer** | `Customer` | Pessoa física/jurídica proprietária do veículo. Identificado por CPF ou CNPJ |
 
 ### Entidades do Domínio
@@ -75,14 +75,6 @@ Oficina mecânica de médio porte. Fluxo: atendente abre `ServiceOrder` → mec�
 | **Saída de Material** | `Stock output (OUT)` | Redução por consumo em OS. Sempre vinculada à OS |
 | **Movimentação** | `MaterialTransaction` | Registro histórico de cada entrada/saída |
 | **Estoque Mínimo** | `Minimum quantity` | Quantidade mínima aceitável. Abaixo disso: alerta de reposição |
-
-### Segurança e Acesso
-
-| Termo | Descrição |
-|---|---|
-| **Autenticação JWT** | Mecanismo para APIs administrativas. Funcionários precisam de token válido |
-| **Consulta Pública** | Acesso do cliente ao status da OS via API, sem login. Validado por OS ID + CPF/CNPJ |
-| **Tipo de Autor** | Quem fez a alteração: `CUSTOMER`, `EMPLOYEE` ou `SYSTEM` |
 
 ### Indicadores
 

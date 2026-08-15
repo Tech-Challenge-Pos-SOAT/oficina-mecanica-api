@@ -32,7 +32,3 @@ Verificados pelo `setup-ai.sh`:
 **Não vale pular**: Spring Boot 4 renomeou starters e moveu pacotes de teste. Memory da 3.x = código que não compila.
 Consulte Context7 (MCP) antes de escrever import de Spring, sempre.
 
-## Observações de Segurança
-
-Nada envia código para serviço externo além dos já listados.
-Nenhum plugin escreve no Trello ou Miro — board atualizado a mão.

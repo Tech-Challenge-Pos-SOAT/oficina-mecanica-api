@@ -139,11 +139,16 @@ class CustomerRepositoryImplTest {
         assertThat(repository.findByDocument("52998224725")).isPresent();
     }
     private static CustomerJpaEntity aCustomerEntity(String name, String document) {
-        var entity = new CustomerJpaEntity();
-        entity.setName(name);
-        entity.setDocument(document);
-        entity.setStatus(EntityStatus.ACTIVE);
-        return entity;
+        return new CustomerJpaEntity(
+            null,  // id gerado
+            name,
+            document,
+            null,  // phone
+            null,  // email
+            EntityStatus.ACTIVE,
+            Instant.now(),
+            Instant.now()
+        );
     }
 }
 ```

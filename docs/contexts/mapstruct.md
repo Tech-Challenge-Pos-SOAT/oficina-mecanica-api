@@ -3,7 +3,11 @@
 ## Princípio
 
 Conversão entre camadas: **MapStruct** (nunca a mão, nunca `BeanUtils.copyProperties` ou ModelMapper).
-Sem Lombok: escreva construtor/getters explícitos ou use `record` para DTO.
+
+**DTOs: sempre `record`** (imutável, seguro, sem boilerplate). Java 17+. Sem Lombok necessário.
+- Request/Response: `record`
+- VO com validação no construtor: `record` também
+- Apenas em casos extremos (spring-specific anotações que exigem setter): `class`
 
 ## Configuração
 
@@ -34,7 +38,21 @@ public interface ServiceOrderMapper {
 
 ## Exemplo Bom
 ```java
-// interfaces.rest.customer
+// interfaces.rest.customer — DTOs como record
+public record CreateCustomerRequest(
+    String document,
+    String name,
+    String phone,
+    String email
+) {}
+
+public record CustomerResponse(
+    Long id,
+    String name,
+    String document,
+    String status
+) {}
+
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface CustomerRestMapper {
     CreateCustomerCommand toCommand(CreateCustomerRequest request);
@@ -43,7 +61,16 @@ public interface CustomerRestMapper {
     CustomerResponse toResponse(Customer domain);
 }
 
-// infrastructure.persistence.customer
+// infrastructure.persistence.customer — DTOs JPA como record também
+public record CustomerJpaEntity(
+    Long id,
+    String document,
+    String name,
+    String phone,
+    String email,
+    String status
+) {}
+
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface CustomerPersistenceMapper {
     @Mapping(target = "id", source = "id")

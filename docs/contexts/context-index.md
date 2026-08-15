@@ -16,6 +16,7 @@ Leia só o que sua tarefa pede. Cada linha: "quando preciso fazer X → leia Y".
 | Nome de classe, campo, tabela, migration ou schema | `modelo-de-dados.md` |
 | Entidade, agregado, VO, enum de status, glossario PT→EN | `dominio-e-linguagem-ubiqua.md` |
 | Pacote, layer, estrutura, controller, use case, DTO, repository | `arquitetura-ddd.md` |
+| Exceção de domínio, handler global, mapeamento para HTTP | `api-exception-handler.md` |
 | Teste (VO/regra/use case/JPA/HTTP), imports Spring Boot 4 | `testes-automatizados.md` |
 | Converter DTO ↔ domain ↔ JPA entity | `mapstruct.md` |
 | Anotar endpoint com OpenAPI/Swagger, @Tag/@Operation/@Schema | `openapi-annotations.md` |
@@ -28,6 +29,5 @@ Pergunte se tarefa esbarrar em:
 
 - **Pontos em aberto** em `dominio-e-linguagem-ubiqua.md` ou `modelo-de-dados.md`
 - Versão Java/Spring Boot/banco
-- Reintroduzir Security/JWT/Lombok; adicionar H2; starter novo
 - Editar migration já aplicada
 - Renomear pacote raiz; mudar estrutura de camadas

@@ -80,6 +80,35 @@ Código legível, mantível, sem "surpresas".
 - Exception meaningful (não `Exception`, use `CustomerNotFoundException`).
 - Nunca engolir erro silenciosamente.
 
+## DTOs — Record
+
+**Regra:** DTOs são sempre `record`. Imutável, seguro, sem boilerplate.
+
+**Onde usar:**
+- `CreateCustomerRequest`, `CustomerResponse` em REST
+- Projections de queries (JPA DTO projection)
+- Transfer objects entre camadas
+- Value Objects com construtor validante também podem ser `record`
+
+**Vantagens:**
+- Imutabilidade automática (segurança thread-safe)
+- Sem `null` implícito (todos campos obrigatórios)
+- Gerado `equals()`, `hashCode()`, `toString()` correto
+- Zero boilerplate
+
+**Exemplo:**
+```java
+public record CreateCustomerRequest(
+    @NotBlank String document,
+    @NotBlank String name,
+    @NotBlank String phone,
+    String email
+) {}
+```
+
+**Excepção:** Classe com anotações Spring que exigem setter/getter (raro). Aí use `class`.
+**Nunca:** Getter/setter manual ou Lombok em DTOs. Use `record`.
+
 ## SOLID
 
 **S — Single Responsibility**

@@ -56,6 +56,7 @@ com.postech.oficinamecanica
 - `*PersistenceMapper` em `infrastructure/persistence/`: domain ↔ JPA (MapStruct).
 - `*RestMapper` em `interfaces/rest/`: HTTP ↔ domain (MapStruct).
 - Nenhum import de `infrastructure/` em `interfaces/rest/`.
+- **DTOs sempre `record`** (CreateCustomerCommand, CreateCustomerRequest, CustomerResponse, etc.). Imutável e seguro.
 
 ## Direção de Dependência
 
@@ -213,36 +214,36 @@ public class CreateCustomerUseCase {
 
 ### infrastructure/persistence/customer
 
-**CustomerJpaEntity.java** — Mapa para BD
+**CustomerJpaEntity.java** — Mapa para BD (DTO persistência como `record`)
 ```java
 @Entity
 @Table(name = "customer")
-public class CustomerJpaEntity {
+public record CustomerJpaEntity(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    Long id,
     
     @Column(nullable = false)
-    private String name;
+    String name,
     
     @Column(nullable = false, unique = true)
-    private String document;
+    String document,
     
-    private String phone;
+    String phone,
     
     @Column(unique = true)
-    private String email;
+    String email,
     
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private EntityStatus status;
+    EntityStatus status,
     
     @Column(nullable = false, updatable = false)
-    private Instant createdAt;
+    Instant createdAt,
     
     @Column(nullable = false)
-    private Instant updatedAt;
-}
+    Instant updatedAt
+) {}
 ```
 
 **CustomerJpaRepository.java** — Spring Data (interno de infrastructure)

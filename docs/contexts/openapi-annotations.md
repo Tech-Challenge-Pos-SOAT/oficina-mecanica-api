@@ -16,9 +16,9 @@ URLs:
 
 ## Regras do Projeto
 
-1. **Anotações APENAS em `interfaces.rest`** (controller/DTO). **NUNCA** em `domain` (entidade/agregado/use case).
-2. **Imports corretos**: sempre `io.swagger.v3.oas.annotations.*`. Se ver `io.swagger.annotations`, é Swagger v2 (errado).
-3. **Sem `@SecurityRequirement`**: não há autenticação ativa.
+1. **DTOs sempre `record`** (Request, Response, projections). Imutável, seguro, sem boilerplate.
+2. **Anotações APENAS em `interfaces.rest`** (controller/DTO). **NUNCA** em `domain` (entidade/agregado/use case).
+3. **Imports corretos**: sempre `io.swagger.v3.oas.annotations.*`. Se ver `io.swagger.annotations`, é Swagger v2 (errado).
 4. **Sem `@Deprecated`** sem motivo (spam).
 5. `description` explica regra de negócio, não repete `summary`.
 6. Lista status reais hoje, não antecipe 401/403.
