@@ -87,11 +87,6 @@ esac
 instalar_claude() {
   log_section "3. Claude Code: skills e plugins"
 
-  if ! command -v claude >/dev/null 2>&1; then
-    log_err "Claude Code nao encontrado. Instale em https://claude.com/claude-code e rode de novo."
-    return 1
-  fi
-
   if command -v rtk >/dev/null 2>&1; then
     log_ok "RTK ja instalado ($(rtk --version 2>&1 | head -1))"
   else
@@ -121,11 +116,6 @@ instalar_claude() {
 
 instalar_cursor() {
   log_section "3. Cursor: rules e configuration"
-
-  if ! command -v cursor >/dev/null 2>&1; then
-    log_err "Cursor nao encontrado. Instale em https://cursor.com e rode de novo."
-    return 1
-  fi
 
   if command -v npx >/dev/null 2>&1; then
     npx ctx7 setup --cursor --cli >/dev/null 2>&1 && log_ok "Context7 configurado (find-docs)" \
