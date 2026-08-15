@@ -34,26 +34,29 @@ public interface ServiceOrderMapper {
 
 <exemplo-bom>
 ```java
-// interfaces.rest.serviceorder
-@Mapper(unmappedTargetPolicy = ReportingPolicy.ERROR)
-public interface ServiceOrderRestMapper {
-    OpenServiceOrderCommand toCommand(OpenServiceOrderRequest request);
-    @Mapping(target = "plate", source = "vehicle.plate.value")
-    @Mapping(target = "totalPrice", source = "price")
-    ServiceOrderResponse toResponse(ServiceOrder serviceOrder);
+// interfaces.rest.customer
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
+public interface CustomerRestMapper {
+    CreateCustomerCommand toCommand(CreateCustomerRequest request);
+    @Mapping(target = "document", source = "document.value")
+    @Mapping(target = "status", expression = "java(domain.getStatus().name())")
+    CustomerResponse toResponse(Customer domain);
 }
 
-// infrastructure.persistence.serviceorder
-@Mapper(unmappedTargetPolicy = ReportingPolicy.ERROR)
-public interface ServiceOrderPersistenceMapper {
-    @Mapping(target = "customerId", source = "customer.id")
-    @Mapping(target = "vehicleId", source = "vehicle.id")
-    ServiceOrderJpaEntity toEntity(ServiceOrder serviceOrder);
-    ServiceOrder toDomain(ServiceOrderJpaEntity entity);
+// infrastructure.persistence.customer
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
+public interface CustomerPersistenceMapper {
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "document", source = "document.value")
+    CustomerJpaEntity toEntity(Customer domain);
+    
+    @Mapping(target = "id", source = "id")
+    @Mapping(target = "document", source = "document")
+    Customer toDomain(CustomerJpaEntity entity);
 }
 
-// Injecao
-public ServiceOrderController(OpenServiceOrderUseCase useCase, ServiceOrderRestMapper mapper) { ... }
+// Injeção
+public CustomerController(CreateCustomerUseCase useCase, CustomerRestMapper mapper) { ... }
 ```
 Bean Spring; dois mappers (um por fronteira); Command entre DTO e use case.
 </exemplo-bom>
@@ -61,12 +64,14 @@ Bean Spring; dois mappers (um por fronteira); Command entre DTO e use case.
 <vo>
 VO com construtor validante nao mapeia sozinho. Use `default` no mapper:
 ```java
-@Mapper
+@Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface CustomerRestMapper {
     CustomerResponse toResponse(Customer customer);
+    
     default String map(Document document) { 
-        return document == null ? null : document.formatted(); 
+        return document == null ? null : document.value(); 
     }
+    
     default Document map(String document) { 
         return document == null ? null : new Document(document); // validacao aqui
     }

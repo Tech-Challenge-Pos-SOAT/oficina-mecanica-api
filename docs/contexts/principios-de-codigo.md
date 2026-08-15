@@ -101,4 +101,4 @@ Depende de abstração, não de implementação concreta. Spring `@Autowired` cu
 
 **Resumo:** DDD pra arquitetura (domínio), DRY pra reutilização, KISS pra simplicidade, CLEAN pra legibilidade, SOLID pra manutenção. Todos caminham juntos — não há trade-off aqui.
 
-Ver `docs/context/arquitetura-ddd.md` para estrutura concreta do projeto.
+Ver `docs/contexts/arquitetura-ddd.md` para estrutura concreta do projeto.

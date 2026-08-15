@@ -33,6 +33,6 @@ Consulte Context7 (MCP) antes de escrever import de Spring, sempre.
 </context7-obrigatorio>
 
 <nota>
-Nada envia codigo para servico externo alem dos ya listados.
+Nada envia codigo para servico externo alem dos ja listados.
 Nenhum plugin escreve no Trello ou Miro — board atualizado a mao.
 </nota>

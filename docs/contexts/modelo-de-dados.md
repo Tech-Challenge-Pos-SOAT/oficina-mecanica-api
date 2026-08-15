@@ -73,7 +73,7 @@ Enums que saem do schema: `ServiceOrderStatus`, `EntityStatus` (ACTIVE/INACTIVE)
 - `customer_id` FK obrigatória: cliente denormalizado. Ao abrir OS, copiar o dono vigente naquele momento (veículo pode trocar de dono depois).
 - `vehicle_id` FK obrigatória.
 - `price` NUMERIC(10,2): nulável até primeira aprovação.
-- `status` VARCHAR(30): transições em `regras-de-negocio.md`.
+- `status` VARCHAR(30): transições em `dominio-e-linguagem-ubiqua.md` (seção Agregado ServiceOrder).
 
 ### ServiceOrderHistory
 - `status` VARCHAR(30): espelho do status da OS naquele momento.

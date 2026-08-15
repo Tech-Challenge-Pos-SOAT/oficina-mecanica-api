@@ -18,7 +18,7 @@ Leia so o que sua tarefa pede. Cada linha: "quando preciso fazer X → leia Y".
 | Nome de classe, campo, tabela, migration ou schema | `modelo-de-dados.md` |
 | Entidade, agregado, VO, enum de status, glossario PT→EN | `dominio-e-linguagem-ubiqua.md` |
 | Pacote, layer, estrutura, controller, use case, DTO, repository | `arquitetura-ddd.md` |
-| Teste (VO/regra/use case/JPA/HTTP), imports Spring Boot 4 | `testes.md` |
+| Teste (VO/regra/use case/JPA/HTTP), imports Spring Boot 4 | `testes-automatizados.md` |
 | Converter DTO ↔ domain ↔ JPA entity | `mapstruct.md` |
 | Anotar endpoint com OpenAPI/Swagger, @Tag/@Operation/@Schema | `openapi-annotations.md` |
 | Ferramentas IA ativas (RTK, Caveman, Ponytail, etc) | `ferramentas-e-skills.md` |

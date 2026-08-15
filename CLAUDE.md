@@ -53,6 +53,17 @@ Leia [docs/contexts/context-index.md](docs/contexts/context-index.md) antes de c
 
 ---
 
+## Commits
+
+**Regra**: Só faz commit se você pedir explicitamente com "faça um commit" ou similar. Caso contrário, informa que está pronto para commit sem executar nada.
+
+Quando terminar o trabalho:
+1. Reporta o status: "Pronto para commit"
+2. Aguarda sua instrução
+3. Só faz commit se você pedir
+
+---
+
 ## Tom e Voz
 
 - Direto e objetivo
