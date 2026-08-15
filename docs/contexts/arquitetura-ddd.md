@@ -77,6 +77,60 @@ Teste: apagando `infrastructure`, `domain` + `application` compilam?
 
 ---
 
+## Separação de Responsabilidades por Camada
+
+Cada camada tem responsabilidade clara. Violação comum: lógica de negócio na controller.
+
+### ❌ Errado: Controller com lógica de negócio
+```java
+@RestController
+public class CustomerController {
+    @GetMapping
+    public List<CustomerResponse> list(@RequestParam(required = false) String status) {
+        // ❌ Lógica de negócio ("padrão ACTIVE") na controller
+        EntityStatus entityStatus = (status == null || status.isBlank())
+            ? EntityStatus.ACTIVE  
+            : EntityStatus.valueOf(status.toUpperCase());
+        
+        return listCustomersUseCase.execute(entityStatus)...
+    }
+}
+```
+
+### ✅ Correto: Controller delega pro UseCase
+```java
+@RestController
+public class CustomerController {
+    @GetMapping
+    public List<CustomerResponse> list(@RequestParam(required = false) String status) {
+        // Controller: apenas conversão HTTP → tipo
+        return listCustomersUseCase.execute(status)...
+    }
+}
+
+@Service
+public class ListCustomersUseCase {
+    public List<Customer> execute(String statusParam) {
+        // UseCase: lógica de negócio (qual status padrão?)
+        EntityStatus status = (statusParam == null || statusParam.isBlank())
+            ? EntityStatus.ACTIVE
+            : EntityStatus.valueOf(statusParam.toUpperCase());
+        
+        return repository.findByStatus(status);
+    }
+}
+```
+
+**Por quê:** Controller é entry point de HTTP. UseCase orquestra regras de negócio. Se padrão muda, muda num lugar só.
+
+**Mapa de responsabilidades:**
+- **interfaces.rest**: HTTP → tipos, delegação
+- **application**: padrões, orquestração, regras de negócio
+- **domain**: invariáveis, agregados, valor objects
+- **infrastructure**: persistência, I/O
+
+---
+
 ## Exemplo Completo: Customer
 
 Schema SQL (fonte de verdade):
