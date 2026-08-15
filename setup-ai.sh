@@ -10,7 +10,6 @@ set -euo pipefail
 # Uso:
 #   ./setup-ai.sh                      # interativo
 #   ./setup-ai.sh --ai=cursor --yes    # sem perguntar
-#   ./setup-ai.sh --ai=claude --os=macos
 
 GREEN='\033[0;32m'; BLUE='\033[0;34m'; YELLOW='\033[1;33m'; RED='\033[0;31m'; NC='\033[0m'
 log_section() { printf "\n${BLUE}== %s ==${NC}\n\n" "$1"; }
@@ -21,50 +20,20 @@ log_err()     { printf "${RED}ERRO %s${NC}\n" "$1" >&2; }
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$REPO_ROOT"
 
-AI=""; OS_ALVO=""; ASSUME_YES="no"
+AI=""; ASSUME_YES="no"
 for arg in "$@"; do
   case "$arg" in
     --ai=*)  AI="${arg#*=}" ;;
-    --os=*)  OS_ALVO="${arg#*=}" ;;
     --yes|-y) ASSUME_YES="yes" ;;
-    -h|--help) sed -n '3,14p' "$0"; exit 0 ;;
+    -h|--help) sed -n '3,12p' "$0"; exit 0 ;;
     *) log_err "flag desconhecida: $arg"; exit 1 ;;
   esac
 done
 
 # ------------------------------------------------------------------
-# 1. Sistema operacional
+# 1. Pre-requisitos (verifica)
 # ------------------------------------------------------------------
-log_section "1. Sistema operacional"
-
-if [ -z "$OS_ALVO" ]; then
-  case "$OSTYPE" in
-    darwin*) OS_ALVO="macos" ;;
-    linux*)  OS_ALVO="linux" ;;
-    *)       OS_ALVO="desconhecido" ;;
-  esac
-fi
-
-case "$OS_ALVO" in
-  macos)
-    log_ok "macOS detectado"
-    ;;
-  linux|windows|desconhecido)
-    log_err "OS '$OS_ALVO' ainda nao e suportado por este script."
-    echo "Instale a mao e rode de novo com --os=macos para so gerar as rules:"
-    echo "  - git, npm, mvn, JDK 21, Docker"
-    echo "  - Claude Code:  https://claude.com/claude-code"
-    echo "  - plugins:      caveman, ponytail, superpowers"
-    exit 1
-    ;;
-  *)
-    log_err "valor invalido para --os: $OS_ALVO (use macos)"; exit 1 ;;
-esac
-
-# ------------------------------------------------------------------
-# 2. Pre-requisitos (verifica, NAO instala)
-# ------------------------------------------------------------------
-log_section "2. Pre-requisitos"
+log_section "1. Pre-requisitos"
 
 FALTANDO=()
 verificar() {  # $1 = comando, $2 = como instalar
