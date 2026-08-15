@@ -1,54 +1,56 @@
-# Testes
+# Testes Automatizados
 
-<skill>
-Meta: **80% cobertura** (JaCoCo) em dominios criticos.
-Relatorio: `target/site/jacoco/index.html` apos `mvn test`.
-Nome: ingles, como todo codigo.
-</skill>
+## Objetivo
 
-<boot4-imports>
-O Boot 4 moveu pacotes de teste. **Consulte Context7 antes de copiar de memoria 3.x.**
+Meta: **80% cobertura** (JaCoCo) em domínios críticos.
+Relatório: `target/site/jacoco/index.html` após `mvn test`.
+Nome: inglês, como todo código.
 
-| Anotacao | Boot 4 correto |
+## Spring Boot 4 — Imports
+
+O Boot 4 moveu pacotes de teste. **Consulte Context7 antes de copiar de memória 3.x.**
+
+| Anotação | Boot 4 correto |
 |---|---|
 | `@DataJpaTest` | `org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest` |
 | `@AutoConfigureTestDatabase` | `org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase` |
 
-Starters granulares: `spring-boot-starter-data-jpa-test`, `spring-boot-starter-webmvc-test`, etc. (nao monolitico `spring-boot-starter-test`).
+Starters granulares: `spring-boot-starter-data-jpa-test`, `spring-boot-starter-webmvc-test`, etc. (não monolítico `spring-boot-starter-test`).
 Falta um starter? Pergunte antes de adicionar.
-</boot4-imports>
 
-<tipologia>
+## Tipologia
+
 | O que | Como | Spring | Banco |
 |---|---|---|---|
-| Value Object | JUnit puro | nao | nao |
-| Agregado invariante | JUnit puro | nao | nao |
-| Use case | JUnit + Mockito | nao | nao |
+| Value Object | JUnit puro | não | não |
+| Agregado invariante | JUnit puro | não | não |
+| Use case | JUnit + Mockito | não | não |
 | Repository/JPA | `@DataJpaTest` + Testcontainers | sim | Postgres real |
-| Controller/HTTP | `@WebMvcTest` | sim | nao |
+| Controller/HTTP | `@WebMvcTest` | sim | não |
 
-**Maior parte nao toca BD**: regra, VO, use case = JUnit puro, sem Spring/container.
-Banco so em testes JPA. Simplicidade ali, nao em trocar BD de teste.
-**Banco de teste**: Postgres real via Testcontainers (nao H2; diverge em tipo/funcao/erro).
-**Sem `@SpringBootTest`**: se regra e pura, teste puro. Subir contexto custoso e nao acha mais.
-</tipologia>
+**Maior parte não toca BD**: regra, VO, use case = JUnit puro, sem Spring/container.
+Banco só em testes JPA. Simplicidade ali, não em trocar BD de teste.
+**Banco de teste**: Postgres real via Testcontainers (não H2; diverge em tipo/função/erro).
+**Sem `@SpringBootTest`**: se regra é pura, teste puro. Subir contexto custoso e não acha mais.
 
-<nomenclatura>
-`should<ExpectedBehavior>When<Condition>` em vocabulario do dominio.
-Exemplos: `shouldRejectDocumentWithInvalidCheckDigit`, `shouldStartDiagnosisWhenOrderIsReceived`
-</nomenclatura>
+## Nomenclatura
 
-<exemplo-ruim>
+`should<ExpectedBehavior>When<Condition>` em vocabulário do domínio.
+Exemplos:
+- `shouldRejectDocumentWithInvalidCheckDigit`
+- `shouldStartDiagnosisWhenOrderIsReceived`
+
+## Exemplo Ruim
 ```java
-@Test void test1() { assertTrue(true); }  // assert tautologico
-@Test void testeDeStatus() { ... }  // em portugues
+@Test void test1() { assertTrue(true); }  // assert tautológico
+@Test void testeDeStatus() { ... }  // em português
 static ServiceOrder shared;  // estado compartilhado
 @Test void test3() { mock(ServiceOrder.class); }  // mock de classe sob teste
 ```
-❌ Nome vago; testes tautologicos; mock de classe sob teste; estado compartilhado.
-</exemplo-ruim>
 
-<exemplo-bom-regra>
+❌ Nome vago; testes tautológicos; mock de classe sob teste; estado compartilhado.
+
+## Exemplo Bom — Regra de Negócio
 ```java
 class CustomerTest {
     @Test
@@ -76,9 +78,8 @@ class CustomerTest {
     }
 }
 ```
-</exemplo-bom-regra>
 
-<exemplo-bom-vo>
+## Exemplo Bom — Value Object
 ```java
 class DocumentTest {
     @ParameterizedTest
@@ -94,9 +95,8 @@ class DocumentTest {
     }
 }
 ```
-</exemplo-bom-vo>
 
-<exemplo-bom-usecase>
+## Exemplo Bom — Use Case
 ```java
 @ExtendWith(MockitoExtension.class)
 class CreateCustomerUseCaseTest {
@@ -119,10 +119,10 @@ class CreateCustomerUseCaseTest {
     }
 }
 ```
-Mock só em portas, nunca em domain (domínio é barato de verdade).
-</exemplo-bom-usecase>
 
-<exemplo-bom-persistencia>
+Mock só em portas, nunca em domain (domínio é barato de verdade).
+
+## Exemplo Bom — Persistência
 ```java
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = Replace.NONE)
@@ -147,12 +147,12 @@ class CustomerRepositoryImplTest {
     }
 }
 ```
-Container `static` reutilizado; `Replace.NONE` nao substitui DataSource; Flyway roda antes dos testes.
-</exemplo-bom-persistencia>
 
-<comandos>
+Container `static` reutilizado; `Replace.NONE` não substitui DataSource; Flyway roda antes dos testes.
+
+## Comandos
+
 ```bash
 mvn test                              # rodar suite
 open target/site/jacoco/index.html    # cobertura
 ```
-</comandos>

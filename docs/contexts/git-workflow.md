@@ -1,51 +1,55 @@
-# Git workflow
+# Git Workflow
 
 Padrão de branch, commit e PR do time.
 
-<skill>
-Sempre `feature/nome-da-tarefa`. Conventional commits em ingles (tipo+escopo). Corpo em portugues.
-PR para `main` precisa aprovacao de outro integrante — quem abre nao aprova nem mergeia.
-</skill>
+## Padrão de Branch
 
-<branch>
-**Padrao**: `feature/nome-descritivo-tarefa`
+**Sempre**: `feature/nome-da-tarefa`
 
-Exemplos: `feature/add-customer-validation`, `feature/fix-serviceorder-status-transition`
+Exemplos:
+- `feature/add-customer-validation`
+- `feature/fix-serviceorder-status-transition`
 
-Convencao do time. Se abrir PR, deve seguir.
-</branch>
+Convenção do time. Se abrir PR, deve seguir.
 
-<conventional-commits>
-Formato: `type(scope): description en ingles`
+## Conventional Commits
+
+Formato: `type(scope): description en inglês`
 
 **Types:** `feat`, `fix`, `refactor`, `docs`, `test`, `chore`
-**Scope:** opcional (customer, serviceorder, docs, ci, etc)
-**Descricao:** imperativo, presente, sem ponto
-**Corpo:** portugues. Explica **por que**, nao **o que**.
 
-**Exemplo bom:**
+**Scope:** opcional (customer, serviceorder, docs, ci, etc)
+
+**Descrição:** imperativo, presente, sem ponto
+
+**Corpo:** português. Explica **por que**, não **o que**.
+
+### Exemplo Bom
+
 ```
 feat(customer): add email uniqueness validation
 
-Customer nao pode ter dois registros com mesmo email. Adicionado
-constraint UNIQUE no schema e validacao no construtor do VO.
+Customer não pode ter dois registros com mesmo email. Adicionado
+constraint UNIQUE no schema e validação no construtor do VO.
 ```
-</conventional-commits>
 
-<pull-request>
-**Aprovacao obrigatoria** de outro integrante. Quem abre nao aprova.
+## Pull Request
 
-**Titulo:** curto, descritivo, `type: short description` (ex: "Add customer email validation")
+**Aprovação obrigatória** de outro integrante. Quem abre não aprova nem mergeia.
+
+**Título:** curto, descritivo, `type: short description`
+Exemplo: "Add customer email validation"
 
 **Corpo:** summary (bullets) + test plan (checklist golden path + edge cases)
-</pull-request>
 
-<ci-pipeline>
+## CI Pipeline
+
 6 jobs em cadeia (`.github/workflows/ci.yml`): check → build → test → dependency-check → trivy → sonar
 
-Job novo? Adicione `if: ${{ !failure() && !cancelled() }}` pra nao quebrar cadeia.
+Job novo? Adicione `if: ${{ !failure() && !cancelled() }}` para não quebrar cadeia.
 
-Ver `docs/context/ci-cd.md` pra detalhes completos da pipeline.
-</ci-pipeline>
+Ver `docs/contexts/ci-cd.md` para detalhes completos da pipeline.
 
-**Regras:** Commit atomico (1 feature/fix); corpo explica **por que**; rebase pra atualizar com main.
+## Regras Gerais
+
+Commit atômico (1 feature/fix); corpo explica **por que**; rebase para atualizar com main.

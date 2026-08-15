@@ -1,16 +1,14 @@
 # Context Index
 
-Leia so o que sua tarefa pede. Cada linha: "quando preciso fazer X → leia Y".
+Leia só o que sua tarefa pede. Cada linha: "quando preciso fazer X → leia Y".
 
-<regras_globais>
+## Regras Globais
 
-1. **Codigo 100% EN**; docs/conversa PT. Nomes saem de `modelo-de-dados.md`.
+1. **Código 100% EN**; docs/conversa PT. Nomes saem de `modelo-de-dados.md`.
 2. **Spring Boot 4**: renomeou starters/pacotes — consulte Context7 antes de imports.
 3. **Flyway** cria schema (ddl-auto=validate). Mudou entidade? Nova migration.
 
-</regras_globais>
-
-<tabela_redirecionamento>
+## Tabela de Redirecionamento
 
 | Tarefa | Arquivo |
 |---|---|
@@ -24,16 +22,12 @@ Leia so o que sua tarefa pede. Cada linha: "quando preciso fazer X → leia Y".
 | Ferramentas IA ativas (RTK, Caveman, Ponytail, etc) | `ferramentas-e-skills.md` |
 | Branch, commit, PR, CI pipeline | `git-workflow.md` |
 
-</tabela_redirecionamento>
-
-<nao_decida_sozinho>
+## Não Decida Sozinho
 
 Pergunte se tarefa esbarrar em:
 
 - **Pontos em aberto** em `dominio-e-linguagem-ubiqua.md` ou `modelo-de-dados.md`
-- Versao Java/Spring Boot/banco
+- Versão Java/Spring Boot/banco
 - Reintroduzir Security/JWT/Lombok; adicionar H2; starter novo
-- Editar migration ja aplicada
+- Editar migration já aplicada
 - Renomear pacote raiz; mudar estrutura de camadas
-
-</nao_decida_sozinho>

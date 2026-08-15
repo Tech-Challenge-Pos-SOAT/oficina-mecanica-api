@@ -1,26 +1,26 @@
 # MapStruct
 
-<skill>
-Conversao entre camadas: **MapStruct** (nunca a mao, nunca `BeanUtils.copyProperties` ou ModelMapper).
-Sem Lombok: escreva construtor/getters explicitos ou use `record` para DTO.
-</skill>
+## Princípio
 
-<config>
-| Configuracao | Efeito |
+Conversão entre camadas: **MapStruct** (nunca a mão, nunca `BeanUtils.copyProperties` ou ModelMapper).
+Sem Lombok: escreva construtor/getters explícitos ou use `record` para DTO.
+
+## Configuração
+
+| Configuração | Efeito |
 |---|---|
-| `defaultComponentModel=spring` | `@Mapper` vira bean injetavel. Nao use `Mappers.getMapper(...)`. |
-| `unmappedTargetPolicy=ERROR` | Campo sem origem quebra o build (evita `null` silencioso em prod). |
-</config>
+| `componentModel="spring"` | `@Mapper` vira bean injetável. Não use `Mappers.getMapper(...)`. |
+| `unmappedTargetPolicy=ReportingPolicy.ERROR` | Campo sem origem quebra o build (evita `null` silencioso em prod). |
 
-<localizacao>
+## Localização e Responsabilidade
+
 | Mapper | Pacote | Converte |
 |---|---|---|
-| `*RestMapper` | `interfaces.rest.<context>` | DTO ↔ Command; Dominio → Response |
-| `*PersistenceMapper` | `infrastructure.persistence.<context>` | Dominio ↔ Entidade JPA |
-**NUNCA**: mapper unico DTO → JPA diretamente (pula dominio, quebra arquitetura).
-</localizacao>
+| `*RestMapper` | `interfaces.rest.<context>` | DTO ↔ Command; Domínio → Response |
+| `*PersistenceMapper` | `infrastructure.persistence.<context>` | Domínio ↔ Entidade JPA |
 
-<exemplo-ruim>
+**NUNCA**: mapper único DTO → JPA diretamente (pula domínio, quebra arquitetura).
+
 ```java
 @Mapper
 public interface ServiceOrderMapper {
@@ -29,10 +29,10 @@ public interface ServiceOrderMapper {
     default BigDecimal calculateTotal(ServiceOrder order) { ... } // regra no mapper
 }
 ```
-❌ Mappers.getMapper ignora Spring; DTO direto pra JPA; regra de negocio.
-</exemplo-ruim>
 
-<exemplo-bom>
+❌ Mappers.getMapper ignora Spring; DTO direto pra JPA; regra de negócio.
+
+## Exemplo Bom
 ```java
 // interfaces.rest.customer
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
@@ -58,11 +58,13 @@ public interface CustomerPersistenceMapper {
 // Injeção
 public CustomerController(CreateCustomerUseCase useCase, CustomerRestMapper mapper) { ... }
 ```
-Bean Spring; dois mappers (um por fronteira); Command entre DTO e use case.
-</exemplo-bom>
 
-<vo>
-VO com construtor validante nao mapeia sozinho. Use `default` no mapper:
+Bean Spring; dois mappers (um por fronteira); Command entre DTO e use case.
+
+## Value Objects com Construtor Validante
+
+VO com construtor validante não mapeia sozinho. Use `default` no mapper:
+
 ```java
 @Mapper(componentModel = "spring", unmappedTargetPolicy = ReportingPolicy.ERROR)
 public interface CustomerRestMapper {
@@ -73,15 +75,14 @@ public interface CustomerRestMapper {
     }
     
     default Document map(String document) { 
-        return document == null ? null : new Document(document); // validacao aqui
+        return document == null ? null : new Document(document); // validação aqui
     }
 }
 ```
-</vo>
 
-<regra>
-1. Mapper **so move dado**; logica fica em dominio.
+## Regras
+
+1. Mapper **só move dado**; lógica fica em domínio.
 2. Um mapper por contexto e por fronteira.
-3. Nao escrever implementacao: `target/generated-sources/annotations` e autogenerad. Nao commitar.
-4. `Unmapped target property`? Mapeie ou `@Mapping(target="x", ignore=true)` com motivo. Nao afrouxe politica.
-</regra>
+3. Não escrever implementação: `target/generated-sources/annotations` é autogenerado. Não commitar.
+4. `Unmapped target property`? Mapeie ou `@Mapping(target="x", ignore=true)` com motivo. Não afrouxe política.
