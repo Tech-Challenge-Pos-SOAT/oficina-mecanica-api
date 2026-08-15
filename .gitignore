@@ -17,3 +17,6 @@ Thumbs.db
 
 # Env
 .env
+
+# SonarQube local (token gerado por scripts/sonar-local.sh|.ps1 - pessoal, nao commitar)
+.sonar/

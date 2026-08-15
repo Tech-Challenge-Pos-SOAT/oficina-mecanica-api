@@ -170,6 +170,22 @@ Configuracao necessaria (feita uma vez, fora do codigo):
    - `SONAR_TOKEN` (o token gerado no passo 2 - usar `sonar.token`, nao
      `sonar.login`, que esta descontinuado)
 
+## SonarQube local para cada dev (opcional)
+
+Alem do SonarQube usado pelo CI (secao acima, fixo na maquina do runner),
+qualquer integrante do time pode subir o **proprio** SonarQube Community
+Edition localmente, via um perfil opcional do `docker-compose.yml`, para ver
+relatorio de qualidade e re-analisar quando quiser, sem depender de ninguem:
+
+```bash
+./scripts/sonar-local.sh        # macOS/Linux/WSL - sobe, faz bootstrap e ja analisa
+.\scripts\sonar-local.ps1       # Windows (PowerShell nativo)
+```
+
+Funciona com Docker Desktop, OrbStack ou Podman, em Windows/Linux/macOS.
+Guia completo (memoria minima, troubleshooting por SO/runtime, comandos
+`up`/`analyze`/`down`/`reset`): [`docs/sonarqube-local.md`](docs/sonarqube-local.md).
+
 ## Documentacao
 
 - Documentacao DDD (Event Storming, Domain Storytelling, Mapa de Contexto,
