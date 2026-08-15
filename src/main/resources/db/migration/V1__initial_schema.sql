@@ -5,10 +5,10 @@
 CREATE TABLE customer (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    document VARCHAR(18) NOT NULL UNIQUE, -- CPF or CNPJ?
+    document VARCHAR(18) NOT NULL UNIQUE, -- CPF or CNPJ
     phone VARCHAR(20),
-    email VARCHAR(255) UNIQUE,
-    status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE / INACTIVE?
+    email VARCHAR(255) NOT NULL UNIQUE,
+    status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE / INACTIVE
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -21,7 +21,7 @@ CREATE TABLE vehicle (
     model VARCHAR(100) NOT NULL,
     plate VARCHAR(10) NOT NULL UNIQUE,
     year INT NOT NULL,
-    status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE / INACTIVE?
+    status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE / INACTIVE
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -35,7 +35,7 @@ CREATE TABLE material (
     price NUMERIC(10,2) NOT NULL,
     stock_quantity INT NOT NULL DEFAULT 0,
     stock_minimum INT NOT NULL DEFAULT 0,
-    status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE / INACTIVE?
+    status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE / INACTIVE
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -46,7 +46,7 @@ CREATE TABLE service (
     name VARCHAR(255) NOT NULL,
     description TEXT,
     price NUMERIC(10,2) NOT NULL,
-    status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE / INACTIVE?
+    status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE / INACTIVE
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -55,9 +55,9 @@ CREATE TABLE service (
 CREATE TABLE employee (
     id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL, -- bcrypt hash?
+    password VARCHAR(255) NOT NULL,
     role VARCHAR(50) NOT NULL,
-    status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE / INACTIVE?
+    status VARCHAR(10) NOT NULL DEFAULT 'ACTIVE', -- ACTIVE / INACTIVE
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -105,8 +105,8 @@ CREATE TABLE service_order_history (
     service_order_id BIGINT NOT NULL REFERENCES service_order(id),
     status VARCHAR(30) NOT NULL,
     price NUMERIC(10,2) NOT NULL,
-    author_type VARCHAR(20) NOT NULL, -- CUSTOMER / EMPLOYEE / SYSTEM?
-    author_id BIGINT, -- null when SYSTEM?
+    author_type VARCHAR(20) NOT NULL, -- CUSTOMER / EMPLOYEE / SYSTEM
+    author_id BIGINT, -- null when SYSTEM
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 CREATE INDEX idx_so_history_order ON service_order_history(service_order_id);
@@ -117,7 +117,7 @@ CREATE TABLE material_transaction (
     material_id BIGINT NOT NULL REFERENCES material(id),
     service_order_id BIGINT REFERENCES service_order(id), -- null on stock entry?
     quantity INT NOT NULL,
-    type VARCHAR(10) NOT NULL, -- IN / OUT?
+    type VARCHAR(10) NOT NULL, -- IN / OUT
     created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 CREATE INDEX idx_mt_material ON material_transaction(material_id);
