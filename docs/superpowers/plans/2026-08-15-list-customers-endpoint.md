@@ -1,4 +1,4 @@
-# Endpoint Listagem de Clientes — Plano de Implementação
+# Endpoint Listagem de Clientes — Plano de Implementação (EXEMPLO PLANO) 
 
 > **Para trabalhadores agentic:** SUB-SKILL OBRIGATÓRIA: Use superpowers:subagent-driven-development (recomendado) ou superpowers:executing-plans para implementar esta tarefa por tarefa. Passos usam sintaxe checkbox (`- [ ]`).
 
