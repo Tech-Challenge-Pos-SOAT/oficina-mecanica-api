@@ -110,7 +110,6 @@ instalar_claude() {
     log_err "Claude Code nao encontrado. Instale em https://claude.com/claude-code e rode de novo."
     return 1
   fi
-  log_ok "Claude Code disponivel"
 
   if command -v rtk >/dev/null 2>&1; then
     log_ok "RTK ja instalado ($(rtk --version 2>&1 | head -1))"
@@ -126,20 +125,17 @@ instalar_claude() {
   fi
   rtk init -g >/dev/null 2>&1 || log_warn "rtk init falhou (siga sem ele)"
 
-  log_warn "instalando plugins (caveman, ponytail, superpowers)..."
   claude plugin marketplace add JuliusBrussee/caveman   >/dev/null 2>&1 || true
   claude plugin install caveman@caveman                 >/dev/null 2>&1 || true
   claude plugin marketplace add DietrichGebert/ponytail >/dev/null 2>&1 || true
   claude plugin install ponytail@ponytail               >/dev/null 2>&1 || true
   claude plugin install superpowers@claude-plugins-official >/dev/null 2>&1 || true
-  log_ok "plugins instalados"
+  log_ok "plugins instalados (caveman, ponytail, superpowers)"
 
   if command -v npx >/dev/null 2>&1; then
-    npx ctx7 setup --claude >/dev/null 2>&1 && log_ok "Context7 configurado" \
-      || log_warn "Context7 nao configurado (rode 'npx ctx7 setup --claude' a mao)"
+    npx ctx7 setup --claude --cli >/dev/null 2>&1 && log_ok "Context7 configurado (find-docs)" \
+      || log_warn "Context7 nao configurado (rode 'npx ctx7 setup --claude --cli' a mano)"
   fi
-
-  log_ok "rule do Claude: CLAUDE.md ja esta versionado na raiz, nada a gerar"
 }
 
 instalar_claude
@@ -147,11 +143,11 @@ instalar_claude
 # ------------------------------------------------------------------
 # 6. Fim
 # ------------------------------------------------------------------
-log_section "Setup finalizado"
-echo "Contexto do projeto (commitado, nao gerado):"
-echo "  docs/contexts/context-index.md   <- indice: comece por aqui"
-echo "  CLAUDE.md                        <- rule do Claude Code"
+log_section "Pronto"
 echo
-echo "Proximos passos:"
-echo "  1. Reinicie o assistente para carregar as rules/plugins."
-echo "  2. mvn test   # testes + cobertura JaCoCo"
+echo "Configurado:"
+echo "  Claude Code (caveman, ponytail, superpowers, Context7)"
+echo "  CLAUDE.md e docs/contexts/ (leia antes de codificar)"
+echo
+echo "Proximo passo:"
+echo "  mvn test"
