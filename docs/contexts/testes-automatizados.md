@@ -50,22 +50,29 @@ static ServiceOrder shared;  // estado compartilhado
 
 <exemplo-bom-regra>
 ```java
-class ServiceOrderTest {
+class CustomerTest {
     @Test
-    void shouldStartDiagnosisWhenOrderIsReceived() {
-        ServiceOrder order = ServiceOrder.open(aVehicle(), "noise when braking");
-        order.startDiagnosis();
-        assertThat(order.status()).isEqualTo(ServiceOrderStatus.IN_DIAGNOSIS);
+    void shouldCreateCustomerWithValidDocument() {
+        Customer customer = Customer.create(
+            new Document("529.982.247-25"), 
+            "Maria Souza", 
+            "11987654321", 
+            "maria@email.com"
+        );
+        assertThat(customer.getStatus()).isEqualTo(EntityStatus.ACTIVE);
+        assertThat(customer.getName()).isEqualTo("Maria Souza");
     }
     @Test
-    void shouldNotAllowStartingDiagnosisTwice() {
-        ServiceOrder order = ServiceOrder.open(aVehicle(), "noise when braking");
-        order.startDiagnosis();
-        assertThatThrownBy(order::startDiagnosis)
-                .isInstanceOf(InvalidStatusTransitionException.class);
-    }
-    private static Vehicle aVehicle() {
-        return new Vehicle(new Plate("ABC1D23"), "Volkswagen", "Gol", 2020);
+    void shouldNotAllowDeactivatingTwice() {
+        Customer customer = Customer.create(
+            new Document("529.982.247-25"), 
+            "Maria Souza", 
+            "11987654321", 
+            "maria@email.com"
+        );
+        customer.deactivate();
+        assertThatThrownBy(customer::deactivate)
+                .isInstanceOf(CustomerAlreadyInactiveException.class);
     }
 }
 ```
@@ -92,20 +99,27 @@ class DocumentTest {
 <exemplo-bom-usecase>
 ```java
 @ExtendWith(MockitoExtension.class)
-class OpenServiceOrderUseCaseTest {
-    @Mock private ServiceOrderRepository serviceOrders;
-    @Mock private VehicleRepository vehicles;
-    @InjectMocks private OpenServiceOrderUseCase useCase;
+class CreateCustomerUseCaseTest {
+    @Mock private CustomerRepository repository;
+    @InjectMocks private CreateCustomerUseCase useCase;
+    
     @Test
-    void shouldFailWhenVehicleDoesNotExist() {
-        when(vehicles.findByPlate(any())).thenReturn(Optional.empty());
-        assertThatThrownBy(() -> useCase.execute(new OpenServiceOrderCommand("ABC1D23", "noise")))
-                .isInstanceOf(VehicleNotFoundException.class);
-        verify(serviceOrders, never()).save(any());
+    void shouldFailWhenDocumentAlreadyExists() {
+        CreateCustomerCommand cmd = new CreateCustomerCommand(
+            "529.982.247-25", "Maria Souza", "11987654321", "maria@email.com"
+        );
+        Customer existing = Customer.create(
+            new Document("529.982.247-25"), "Outro Nome", "11912345678", null
+        );
+        when(repository.findByDocument(any())).thenReturn(Optional.of(existing));
+        
+        assertThatThrownBy(() -> useCase.execute(cmd))
+                .isInstanceOf(DuplicateDocumentException.class);
+        verify(repository, never()).save(any());
     }
 }
 ```
-Mock so em portas, nunca em domain (dominio e barato de verdade).
+Mock só em portas, nunca em domain (domínio é barato de verdade).
 </exemplo-bom-usecase>
 
 <exemplo-bom-persistencia>

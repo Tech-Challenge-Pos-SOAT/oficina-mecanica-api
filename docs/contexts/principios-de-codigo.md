@@ -4,27 +4,29 @@ Referência para design e implementação.
 
 ## DDD — Domain-Driven Design
 
-Código organizado por domínio (bounded contexts), não por camada técnica.
+Código organizado por **camadas** (domain, application, infrastructure), cada uma com seu domínio (customer, vehicle, etc.).
 
 **Estrutura:**
 ```
 com.postech.oficinamecanica
-├── customer/
-│   ├── domain/        (entidades, VOs, repositórios interface)
-│   ├── application/   (use cases)
-│   └── infra/         (JPA, repositories impl, mappers)
-├── serviceorder/
-├── vehicle/
-└── ...
+├── domain/
+│   ├── shared/               (EntityStatus)
+│   └── customer/             (entidades, VOs, exceptions)
+├── application/
+│   └── customer/             (use cases, commands, portas)
+├── infrastructure/
+│   └── persistence/customer/ (JPA, repositories impl, mappers)
+└── interfaces/
+    └── rest/customer/        (controllers, DTOs, mappers HTTP)
 ```
 
 **Regras:**
-- Entidade = raiz do agregado. Contém lógica de negócio.
-- Value Object = imutável, sem ID. Encapsula regra.
-- Repositório = interface no domain, implementação no infra.
-- Use case = orquestra domínio (aplicação).
+- Entidade = raiz do agregado. Contém lógica de negócio. Sem Spring/JPA.
+- Value Object = imutável, sem ID. Encapsula regra. Valida no construtor.
+- Repositório em `application/`: interface (porta). Em `infrastructure/`: implementação JPA.
+- Use case em `application/`: orquestra domínio, delega tudo a ele.
 
-Ver `docs/context/arquitetura-ddd.md` para layout completo.
+Ver `docs/contexts/arquitetura-ddd.md` para layout completo + exemplo Customer end-to-end.
 
 ## DRY — Don't Repeat Yourself
 

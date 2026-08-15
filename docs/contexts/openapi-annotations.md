@@ -45,42 +45,57 @@ URLs:
 <template_minimo>
 
 ```java
-@Tag(name = "Service Orders", description = "Abertura e acompanhamento de ordens")
+@Tag(name = "Customers", description = "Cadastro e gestao de clientes")
 @RestController
-@RequestMapping("/api/service-orders")
-public class ServiceOrderController {
+@RequestMapping("/api/customers")
+public class CustomerController {
 
-  @Operation(summary = "Abre ordem", description = "Status RECEIVED. Veiculo deve estar cadastrado.")
+  @Operation(summary = "Cria cliente", description = "CPF ou CNPJ unico no sistema. Email opcional e unico.")
   @ApiResponses({
-    @ApiResponse(responseCode = "201", description = "Ordem criada",
-      content = @Content(schema = @Schema(implementation = ServiceOrderResponse.class))),
-    @ApiResponse(responseCode = "404", description = "Veiculo nao existe",
+    @ApiResponse(responseCode = "201", description = "Cliente criado",
+      content = @Content(schema = @Schema(implementation = CustomerResponse.class))),
+    @ApiResponse(responseCode = "400", description = "Documento invalido ou email duplicado",
       content = @Content(schema = @Schema(implementation = ErrorMessage.class))),
-    @ApiResponse(responseCode = "409", description = "Veiculo ja tem ordem aberta",
+    @ApiResponse(responseCode = "409", description = "Documento ja existe",
       content = @Content(schema = @Schema(implementation = ErrorMessage.class)))
   })
   
   @PostMapping
-  public ResponseEntity<ServiceOrderResponse> open(@RequestBody @Valid OpenServiceOrderRequest req) { }
+  public ResponseEntity<CustomerResponse> create(@RequestBody @Valid CreateCustomerRequest req) { }
 
-  @Operation(summary = "Consulta ordem")
-  @GetMapping("/{publicId}")
-  public ResponseEntity<ServiceOrderResponse> byId(
-    @Parameter(description = "ID da ordem", example = "123")
-    @PathVariable Long publicId
+  @Operation(summary = "Consulta cliente")
+  @GetMapping("/{id}")
+  public ResponseEntity<CustomerResponse> findById(
+    @Parameter(description = "ID do cliente", example = "123")
+    @PathVariable Long id
   ) { }
 }
 
-public record OpenServiceOrderRequest(
-  @Schema(description = "Placa", example = "ABC1D23")
-  @NotBlank String plate
+public record CreateCustomerRequest(
+  @Schema(description = "CPF ou CNPJ (11 ou 14 digitos)", example = "52998224725")
+  @NotBlank String document,
+  
+  @Schema(description = "Nome completo", example = "Maria Souza")
+  @NotBlank String name,
+  
+  @Schema(description = "Telefone com DDD", example = "11987654321")
+  @NotBlank String phone,
+  
+  @Schema(description = "Email (opcional, unico)", example = "maria@email.com")
+  String email
 ) {}
 
-public record ServiceOrderResponse(
-  @Schema(description = "ID publico", example = "123")
-  Long publicId,
+public record CustomerResponse(
+  @Schema(description = "ID", example = "123")
+  Long id,
   
-  @Schema(description = "Status", example = "RECEIVED")
+  @Schema(description = "Nome", example = "Maria Souza")
+  String name,
+  
+  @Schema(description = "Documento", example = "529.982.247-25")
+  String document,
+  
+  @Schema(description = "Status", example = "ACTIVE")
   String status
 ) {}
 ```
