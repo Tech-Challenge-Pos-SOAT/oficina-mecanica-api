@@ -56,24 +56,36 @@ if [ ${#FALTANDO[@]} -gt 0 ]; then
 fi
 
 # ------------------------------------------------------------------
-# 3. Qual IA
+# 2. Qual IA
 # ------------------------------------------------------------------
-log_section "3. Assistente de IA"
+log_section "2. Assistente de IA"
 
 if [ -z "$AI" ]; then
-  AI="claude"
+  if [ "$ASSUME_YES" = "yes" ]; then
+    AI="claude"
+  else
+    echo "Qual IA voce vai usar?"
+    echo "  1) Claude Code"
+    echo "  2) Cursor"
+    read -p "Escolha (1 ou 2): " choice
+    case "$choice" in
+      1) AI="claude" ;;
+      2) AI="cursor" ;;
+      *) log_err "opcao invalida"; exit 1 ;;
+    esac
+  fi
 fi
 
 case "$AI" in
-  claude) log_ok "IA escolhida: $AI" ;;
-  *) log_err "valor invalido para --ai: $AI (use claude)"; exit 1 ;;
+  claude|cursor) log_ok "IA escolhida: $AI" ;;
+  *) log_err "valor invalido para --ai: $AI (use claude ou cursor)"; exit 1 ;;
 esac
 
 # ------------------------------------------------------------------
-# 4. Claude Code: skills e plugins
+# 3. Instalacao de skills e plugins
 # ------------------------------------------------------------------
 instalar_claude() {
-  log_section "4. Claude Code: skills e plugins"
+  log_section "3. Claude Code: skills e plugins"
 
   if ! command -v claude >/dev/null 2>&1; then
     log_err "Claude Code nao encontrado. Instale em https://claude.com/claude-code e rode de novo."
@@ -107,15 +119,39 @@ instalar_claude() {
   fi
 }
 
-instalar_claude
+instalar_cursor() {
+  log_section "3. Cursor: rules e configuration"
+
+  if ! command -v cursor >/dev/null 2>&1; then
+    log_err "Cursor nao encontrado. Instale em https://cursor.com e rode de novo."
+    return 1
+  fi
+
+  if command -v npx >/dev/null 2>&1; then
+    npx ctx7 setup --cursor --cli >/dev/null 2>&1 && log_ok "Context7 configurado (find-docs)" \
+      || log_warn "Context7 nao configurado (rode 'npx ctx7 setup --cursor --cli' a mano)"
+  fi
+}
+
+case "$AI" in
+  claude) instalar_claude ;;
+  cursor) instalar_cursor ;;
+esac
 
 # ------------------------------------------------------------------
-# 6. Fim
+# 4. Fim
 # ------------------------------------------------------------------
 log_section "Pronto"
 echo
 echo "Configurado:"
-echo "  Claude Code (caveman, ponytail, superpowers, Context7)"
+case "$AI" in
+  claude)
+    echo "  Claude Code (caveman, ponytail, superpowers, Context7)"
+    ;;
+  cursor)
+    echo "  Cursor (.cursor/rules/, Context7)"
+    ;;
+esac
 echo "  CLAUDE.md e docs/contexts/ (leia antes de codificar)"
 echo
 echo "Proximo passo:"
