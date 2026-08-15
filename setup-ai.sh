@@ -161,4 +161,6 @@ echo "  CLAUDE.md (regras de comportamento)"
 echo "  docs/contexts/ (documentacao versionada)"
 echo
 echo "Proximo passo:"
-echo "  mvn test"
+echo "  docker compose up --build"
+echo "  ou"
+echo "  mvn spring-boot:run"
