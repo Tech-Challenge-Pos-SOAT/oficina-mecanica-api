@@ -7,6 +7,13 @@ import com.postech.oficinamecanica.domain.customer.Document;
 import com.postech.oficinamecanica.domain.customer.DuplicateDocumentException;
 import com.postech.oficinamecanica.domain.customer.DuplicateEmailException;
 import com.postech.oficinamecanica.domain.customer.InvalidDocumentException;
+import com.postech.oficinamecanica.domain.vehicle.CustomerNotActiveException;
+import com.postech.oficinamecanica.domain.vehicle.DuplicatePlateException;
+import com.postech.oficinamecanica.domain.vehicle.InvalidPlateException;
+import com.postech.oficinamecanica.domain.vehicle.Plate;
+import com.postech.oficinamecanica.domain.vehicle.VehicleAlreadyActiveException;
+import com.postech.oficinamecanica.domain.vehicle.VehicleAlreadyInactiveException;
+import com.postech.oficinamecanica.domain.vehicle.VehicleNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -69,6 +76,54 @@ class GlobalExceptionHandlerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(response.getBody().code()).isEqualTo("CUSTOMER_ALREADY_INACTIVE");
+    }
+
+    @Test
+    void shouldMapInvalidPlateTo400() {
+        ResponseEntity<ErrorResponse> response = handler.handle(new InvalidPlateException("123"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().code()).isEqualTo("INVALID_PLATE");
+    }
+
+    @Test
+    void shouldMapDuplicatePlateTo409() {
+        ResponseEntity<ErrorResponse> response = handler.handle(new DuplicatePlateException(new Plate("ABC-1234")));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody().code()).isEqualTo("DUPLICATE_PLATE");
+    }
+
+    @Test
+    void shouldMapVehicleNotFoundTo404() {
+        ResponseEntity<ErrorResponse> response = handler.handle(new VehicleNotFoundException(1L));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody().code()).isEqualTo("VEHICLE_NOT_FOUND");
+    }
+
+    @Test
+    void shouldMapVehicleAlreadyActiveTo409() {
+        ResponseEntity<ErrorResponse> response = handler.handle(new VehicleAlreadyActiveException(1L));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody().code()).isEqualTo("VEHICLE_ALREADY_ACTIVE");
+    }
+
+    @Test
+    void shouldMapVehicleAlreadyInactiveTo409() {
+        ResponseEntity<ErrorResponse> response = handler.handle(new VehicleAlreadyInactiveException(1L));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody().code()).isEqualTo("VEHICLE_ALREADY_INACTIVE");
+    }
+
+    @Test
+    void shouldMapCustomerNotActiveTo409() {
+        ResponseEntity<ErrorResponse> response = handler.handle(new CustomerNotActiveException(1L));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(response.getBody().code()).isEqualTo("CUSTOMER_NOT_ACTIVE");
     }
 
     @Test
