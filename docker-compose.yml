@@ -29,5 +29,69 @@ services:
     ports:
       - "8080:8080"
 
+  # ------------------------------------------------------------------------
+  # SonarQube local, opcional (perfil "sonar") - cada dev sobe na propria
+  # maquina para ver relatorio de qualidade e re-analisar quando quiser, sem
+  # depender da maquina que roda o SonarQube do GitHub Actions.
+  #
+  # So sobe quando pedido explicitamente:
+  #   docker compose --profile sonar up -d sonarqube-db sonarqube
+  # (ou use scripts/sonar-local.sh / scripts/sonar-local.ps1, que ja fazem
+  # isso + o bootstrap de senha/token - ver docs/sonarqube-local.md)
+  #
+  # "docker compose up" normal (sem --profile) continua subindo so db + app,
+  # exatamente como antes - profiles e opt-in.
+  # ------------------------------------------------------------------------
+  sonarqube-db:
+    image: postgres:16-alpine
+    container_name: oficina-mecanica-sonar-db
+    profiles: ["sonar"]
+    environment:
+      POSTGRES_DB: sonar
+      POSTGRES_USER: sonar
+      POSTGRES_PASSWORD: sonar
+    volumes:
+      - sonarqube_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sonar -d sonar"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  sonarqube:
+    image: sonarqube:community
+    container_name: oficina-mecanica-sonarqube
+    profiles: ["sonar"]
+    depends_on:
+      sonarqube-db:
+        condition: service_healthy
+    environment:
+      SONAR_JDBC_URL: jdbc:postgresql://sonarqube-db:5432/sonar
+      SONAR_JDBC_USERNAME: sonar
+      SONAR_JDBC_PASSWORD: sonar
+      # Community Edition + Elasticsearch embutido exige "vm.max_map_count"
+      # alto no host (Linux nativo). Em Docker Desktop/OrbStack/Podman
+      # (Mac/Windows) a VM interna ja costuma vir configurada, mas o valor
+      # varia por maquina/runtime - em vez de pedir "sudo sysctl" manual e
+      # diferente em cada SO, desabilitamos esse bootstrap check (uso local
+      # de dev, nunca producao). Ver docs/sonarqube-local.md.
+      SONAR_ES_BOOTSTRAP_CHECKS_DISABLE: "true"
+    ports:
+      - "9000:9000"
+    volumes:
+      - sonarqube_data:/opt/sonarqube/data
+      - sonarqube_extensions:/opt/sonarqube/extensions
+      - sonarqube_logs:/opt/sonarqube/logs
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:9000/api/system/status | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
 volumes:
   oficina_mecanica_data:
+  sonarqube_db_data:
+  sonarqube_data:
+  sonarqube_extensions:
+  sonarqube_logs:
