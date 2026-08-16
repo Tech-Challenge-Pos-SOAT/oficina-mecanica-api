@@ -2,6 +2,7 @@ package com.postech.oficinamecanica.interfaces.rest.customer;
 
 import com.postech.oficinamecanica.application.customer.ChangeCustomerStatusUseCase;
 import com.postech.oficinamecanica.application.customer.CreateCustomerUseCase;
+import com.postech.oficinamecanica.application.customer.GetCustomerByDocumentUseCase;
 import com.postech.oficinamecanica.application.customer.GetCustomerUseCase;
 import com.postech.oficinamecanica.application.customer.ListCustomersUseCase;
 import com.postech.oficinamecanica.application.customer.UpdateCustomerUseCase;
@@ -36,6 +37,7 @@ public class CustomerController {
     private final CreateCustomerUseCase createCustomerUseCase;
     private final UpdateCustomerUseCase updateCustomerUseCase;
     private final GetCustomerUseCase getCustomerUseCase;
+    private final GetCustomerByDocumentUseCase getCustomerByDocumentUseCase;
     private final ListCustomersUseCase listCustomersUseCase;
     private final ChangeCustomerStatusUseCase changeCustomerStatusUseCase;
     private final CustomerRestMapper mapper;
@@ -44,6 +46,7 @@ public class CustomerController {
         CreateCustomerUseCase createCustomerUseCase,
         UpdateCustomerUseCase updateCustomerUseCase,
         GetCustomerUseCase getCustomerUseCase,
+        GetCustomerByDocumentUseCase getCustomerByDocumentUseCase,
         ListCustomersUseCase listCustomersUseCase,
         ChangeCustomerStatusUseCase changeCustomerStatusUseCase,
         CustomerRestMapper mapper
@@ -51,6 +54,7 @@ public class CustomerController {
         this.createCustomerUseCase = createCustomerUseCase;
         this.updateCustomerUseCase = updateCustomerUseCase;
         this.getCustomerUseCase = getCustomerUseCase;
+        this.getCustomerByDocumentUseCase = getCustomerByDocumentUseCase;
         this.listCustomersUseCase = listCustomersUseCase;
         this.changeCustomerStatusUseCase = changeCustomerStatusUseCase;
         this.mapper = mapper;
@@ -109,6 +113,27 @@ public class CustomerController {
         @Parameter(description = "ID do cliente", example = "1") @PathVariable Long id
     ) {
         Customer customer = getCustomerUseCase.execute(id);
+        return ResponseEntity.ok(mapper.toResponse(customer));
+    }
+
+    @GetMapping("/document")
+    @Operation(
+        summary = "Consulta cliente por CPF/CNPJ",
+        description = "Identifica o cliente pelo documento, formatado ou não (mesma checagem de unicidade usada no cadastro)."
+    )
+    @ApiResponses({
+        @ApiResponse(responseCode = "200", description = "Cliente encontrado",
+            content = @Content(schema = @Schema(implementation = CustomerResponse.class))),
+        @ApiResponse(responseCode = "400", description = "CPF/CNPJ inválido",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+        @ApiResponse(responseCode = "404", description = "Cliente não encontrado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+    })
+    public ResponseEntity<CustomerResponse> findByDocument(
+        @Parameter(description = "CPF ou CNPJ, formatado ou não", example = "123.456.789-09")
+        @RequestParam String document
+    ) {
+        Customer customer = getCustomerByDocumentUseCase.execute(document);
         return ResponseEntity.ok(mapper.toResponse(customer));
     }
 

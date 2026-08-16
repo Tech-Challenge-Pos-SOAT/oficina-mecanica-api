@@ -5,6 +5,7 @@ import com.postech.oficinamecanica.application.customer.ChangeCustomerStatusComm
 import com.postech.oficinamecanica.application.customer.ChangeCustomerStatusUseCase;
 import com.postech.oficinamecanica.application.customer.CreateCustomerCommand;
 import com.postech.oficinamecanica.application.customer.CreateCustomerUseCase;
+import com.postech.oficinamecanica.application.customer.GetCustomerByDocumentUseCase;
 import com.postech.oficinamecanica.application.customer.GetCustomerUseCase;
 import com.postech.oficinamecanica.application.customer.ListCustomersUseCase;
 import com.postech.oficinamecanica.application.customer.UpdateCustomerCommand;
@@ -47,6 +48,9 @@ class CustomerControllerTest {
 
     @MockitoBean
     private GetCustomerUseCase getCustomerUseCase;
+
+    @MockitoBean
+    private GetCustomerByDocumentUseCase getCustomerByDocumentUseCase;
 
     @MockitoBean
     private ListCustomersUseCase listCustomersUseCase;
@@ -378,5 +382,34 @@ class CustomerControllerTest {
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isConflict())
             .andExpect(jsonPath("$.code").value("CUSTOMER_ALREADY_ACTIVE"));
+    }
+
+    @Test
+    void shouldReturnCustomerByDocumentWhenFound() throws Exception {
+        Customer customer = new Customer(
+            1L, new Document("52998224725"), "Maria Souza", "11987654321", "maria@email.com",
+            EntityStatus.ACTIVE, Instant.now(), Instant.now()
+        );
+        CustomerResponse response = new CustomerResponse(
+            1L, "Maria Souza", "529.982.247-25", "11987654321", "maria@email.com", "ACTIVE", Instant.now(), Instant.now()
+        );
+
+        when(getCustomerByDocumentUseCase.execute("529.982.247-25")).thenReturn(customer);
+        when(mapper.toResponse(customer)).thenReturn(response);
+
+        mockMvc.perform(get("/api/customers/document").param("document", "529.982.247-25"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(1))
+            .andExpect(jsonPath("$.document").value("529.982.247-25"));
+    }
+
+    @Test
+    void shouldReturn404WhenCustomerByDocumentNotFound() throws Exception {
+        when(getCustomerByDocumentUseCase.execute("529.982.247-25"))
+            .thenThrow(new CustomerNotFoundException("529.982.247-25"));
+
+        mockMvc.perform(get("/api/customers/document").param("document", "529.982.247-25"))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.code").value("CUSTOMER_NOT_FOUND"));
     }
 }
