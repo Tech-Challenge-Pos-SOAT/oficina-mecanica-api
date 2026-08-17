@@ -3,9 +3,9 @@ spring:
     name: oficina-mecanica-api
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/oficina_mecanica
-    username: oficina
-    password: oficina
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/oficina_mecanica}
+    username: ${DB_USERNAME:oficina}
+    password: ${DB_PASSWORD:oficina}
 
   jpa:
     hibernate:
@@ -15,7 +15,7 @@ spring:
 
   docker:
     compose:
-      enabled: true
+      enabled: ${DOCKER_COMPOSE_ENABLED:true}
       file: docker-compose.yml
       lifecycle-management: start-and-stop
 

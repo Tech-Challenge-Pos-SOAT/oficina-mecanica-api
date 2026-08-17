@@ -1,0 +1,105 @@
+package com.postech.oficinamecanica.interfaces.rest.material;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@Testcontainers
+class MaterialControllerIntegrationTest {
+
+    @Container
+    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+
+    @DynamicPropertySource
+    static void datasourceProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.docker.compose.enabled", () -> "false");
+    }
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Test
+    void shouldReturnActiveMaterialsWhenNoStatusFilterProvided() throws Exception {
+        mockMvc.perform(get("/api/materials"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(4)))
+            .andExpect(jsonPath("$[*].status", contains("ACTIVE", "ACTIVE", "ACTIVE", "ACTIVE")));
+    }
+
+    @Test
+    void shouldReturnMaterialsOrderedByIdAscending() throws Exception {
+        mockMvc.perform(get("/api/materials").param("status", "ACTIVE"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[1].id").value(2))
+            .andExpect(jsonPath("$[2].id").value(3))
+            .andExpect(jsonPath("$[3].id").value(4));
+    }
+
+    @Test
+    void shouldReturnEveryContractFieldForFirstMaterial() throws Exception {
+        mockMvc.perform(get("/api/materials"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].id").value(1))
+            .andExpect(jsonPath("$[0].name").value("Óleo Motor 5W30 Sintético"))
+            .andExpect(jsonPath("$[0].description").value("Galão de 4 litros para motores flex"))
+            .andExpect(jsonPath("$[0].price").value(189.90))
+            .andExpect(jsonPath("$[0].stockQuantity").value(40))
+            .andExpect(jsonPath("$[0].stockMinimum").value(10))
+            .andExpect(jsonPath("$[0].status").value("ACTIVE"))
+            .andExpect(jsonPath("$[0].createdAt").exists())
+            .andExpect(jsonPath("$[0].updatedAt").exists());
+    }
+
+    @Test
+    void shouldReturnNullDescriptionWhenMaterialHasNone() throws Exception {
+        mockMvc.perform(get("/api/materials"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[3].name").value("Correia Dentada"))
+            .andExpect(jsonPath("$[3].description").isEmpty());
+    }
+
+    @Test
+    void shouldReturnInactiveMaterialsWhenStatusIsInactive() throws Exception {
+        mockMvc.perform(get("/api/materials").param("status", "INACTIVE"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(1)))
+            .andExpect(jsonPath("$[0].id").value(5))
+            .andExpect(jsonPath("$[0].name").value("Bateria 60Ah"))
+            .andExpect(jsonPath("$[0].status").value("INACTIVE"));
+    }
+
+    @Test
+    void shouldAcceptLowercaseStatusFilter() throws Exception {
+        mockMvc.perform(get("/api/materials").param("status", "inactive"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(1)))
+            .andExpect(jsonPath("$[0].id").value(5));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenStatusIsUnknown() throws Exception {
+        mockMvc.perform(get("/api/materials").param("status", "ARCHIVED"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.code").value("INVALID_STATUS"))
+            .andExpect(jsonPath("$.status").value(400));
+    }
+}

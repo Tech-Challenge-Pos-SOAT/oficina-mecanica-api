@@ -1,1 +1,1 @@
-package com.postech.oficinamecanica.domain.peca;
+package com.postech.oficinamecanica.domain.material;
