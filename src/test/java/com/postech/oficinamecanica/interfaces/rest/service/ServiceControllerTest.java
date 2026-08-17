@@ -9,7 +9,10 @@ import com.postech.oficinamecanica.application.service.FindServiceByIdUseCase;
 import com.postech.oficinamecanica.application.service.ListServicesUseCase;
 import com.postech.oficinamecanica.application.service.UpdateServiceCommand;
 import com.postech.oficinamecanica.application.service.UpdateServiceUseCase;
+import com.postech.oficinamecanica.domain.service.DuplicateServiceNameException;
+import com.postech.oficinamecanica.domain.service.InvalidServicePriceException;
 import com.postech.oficinamecanica.domain.service.Service;
+import com.postech.oficinamecanica.domain.service.ServiceAlreadyActiveException;
 import com.postech.oficinamecanica.domain.service.ServiceNotFoundException;
 import com.postech.oficinamecanica.domain.shared.EntityStatus;
 import org.junit.jupiter.api.Test;
@@ -22,7 +25,6 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -107,7 +109,7 @@ class ServiceControllerTest {
         UpdateServiceCommand cmd = new UpdateServiceCommand("Troca de óleo", "desc", new BigDecimal("135.00"));
 
         when(mapper.toCommand(any(UpdateServiceRequest.class))).thenReturn(cmd);
-        when(updateServiceUseCase.execute(eq(1L), eq(cmd))).thenReturn(service);
+        when(updateServiceUseCase.execute(1L, cmd)).thenReturn(service);
         when(mapper.toResponse(service)).thenReturn(response);
 
         String body = objectMapper.writeValueAsString(
@@ -132,6 +134,83 @@ class ServiceControllerTest {
         mockMvc.perform(get("/api/services/1"))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(1));
+    }
+
+    @Test
+    void shouldReturn409WhenServiceNameAlreadyExists() throws Exception {
+        CreateServiceCommand cmd = new CreateServiceCommand("Troca de óleo", "desc", new BigDecimal("120.00"));
+
+        when(mapper.toCommand(any(CreateServiceRequest.class))).thenReturn(cmd);
+        when(createServiceUseCase.execute(cmd)).thenThrow(new DuplicateServiceNameException("Troca de óleo"));
+
+        String body = objectMapper.writeValueAsString(
+            new CreateServiceRequest("Troca de óleo", "desc", new BigDecimal("120.00"))
+        );
+
+        mockMvc.perform(post("/api/services")
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.code").value("DUPLICATE_SERVICE_NAME"));
+    }
+
+    @Test
+    void shouldReturn400WhenServicePriceIsInvalid() throws Exception {
+        CreateServiceCommand cmd = new CreateServiceCommand("Troca de óleo", "desc", new BigDecimal("120.00"));
+
+        when(mapper.toCommand(any(CreateServiceRequest.class))).thenReturn(cmd);
+        when(createServiceUseCase.execute(cmd)).thenThrow(new InvalidServicePriceException(new BigDecimal("120.00")));
+
+        String body = objectMapper.writeValueAsString(
+            new CreateServiceRequest("Troca de óleo", "desc", new BigDecimal("120.00"))
+        );
+
+        mockMvc.perform(post("/api/services")
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.code").value("INVALID_SERVICE_PRICE"));
+    }
+
+    @Test
+    void shouldReturn409WhenServiceStatusConflict() throws Exception {
+        ChangeServiceStatusCommand cmd = new ChangeServiceStatusCommand("ACTIVE");
+
+        when(mapper.toCommand(any(ChangeServiceStatusRequest.class))).thenReturn(cmd);
+        when(changeServiceStatusUseCase.execute(1L, cmd)).thenThrow(new ServiceAlreadyActiveException(1L));
+
+        String body = objectMapper.writeValueAsString(new ChangeServiceStatusRequest("ACTIVE"));
+
+        mockMvc.perform(patch("/api/services/1/status")
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isConflict())
+            .andExpect(jsonPath("$.code").value("SERVICE_STATUS_CONFLICT"));
+    }
+
+    @Test
+    void shouldReturn400WhenChangeStatusValueIsInvalid() throws Exception {
+        ChangeServiceStatusCommand cmd = new ChangeServiceStatusCommand("BLOCKED");
+
+        when(mapper.toCommand(any(ChangeServiceStatusRequest.class))).thenReturn(cmd);
+        when(changeServiceStatusUseCase.execute(1L, cmd)).thenThrow(new IllegalArgumentException());
+
+        String body = objectMapper.writeValueAsString(new ChangeServiceStatusRequest("BLOCKED"));
+
+        mockMvc.perform(patch("/api/services/1/status")
+                .contentType("application/json")
+                .content(body))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.code").value("INVALID_STATUS"));
+    }
+
+    @Test
+    void shouldReturn500WhenUnexpectedErrorOccurs() throws Exception {
+        when(findServiceByIdUseCase.execute(1L)).thenThrow(new RuntimeException("falha inesperada"));
+
+        mockMvc.perform(get("/api/services/1"))
+            .andExpect(status().isInternalServerError())
+            .andExpect(jsonPath("$.code").value("INTERNAL_ERROR"));
     }
 
     @Test
@@ -165,7 +244,7 @@ class ServiceControllerTest {
         ChangeServiceStatusCommand cmd = new ChangeServiceStatusCommand("INACTIVE");
 
         when(mapper.toCommand(any(ChangeServiceStatusRequest.class))).thenReturn(cmd);
-        when(changeServiceStatusUseCase.execute(eq(1L), eq(cmd))).thenReturn(service);
+        when(changeServiceStatusUseCase.execute(1L, cmd)).thenReturn(service);
         when(mapper.toResponse(service)).thenReturn(response);
 
         String body = objectMapper.writeValueAsString(new ChangeServiceStatusRequest("INACTIVE"));

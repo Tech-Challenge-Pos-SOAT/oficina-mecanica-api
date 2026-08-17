@@ -14,14 +14,18 @@ class ServiceTest {
 
     @Test
     void shouldCreateServiceWithValidPrice() {
+        Instant createdAt = Instant.now();
+        Instant updatedAt = Instant.now();
         Service service = new Service(
             null, "Troca de óleo", "Troca de óleo do motor",
-            new BigDecimal("120.00"), EntityStatus.ACTIVE, Instant.now(), Instant.now()
+            new BigDecimal("120.00"), EntityStatus.ACTIVE, createdAt, updatedAt
         );
 
         assertThat(service.getName()).isEqualTo("Troca de óleo");
         assertThat(service.getPrice()).isEqualByComparingTo("120.00");
         assertThat(service.getStatus()).isEqualTo(EntityStatus.ACTIVE);
+        assertThat(service.getCreatedAt()).isEqualTo(createdAt);
+        assertThat(service.getUpdatedAt()).isEqualTo(updatedAt);
     }
 
     @ParameterizedTest
