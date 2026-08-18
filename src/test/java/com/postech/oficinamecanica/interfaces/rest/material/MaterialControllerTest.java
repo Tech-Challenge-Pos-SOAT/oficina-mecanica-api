@@ -1,6 +1,7 @@
 package com.postech.oficinamecanica.interfaces.rest.material;
 
 import com.postech.oficinamecanica.application.material.GetMaterialUseCase;
+import com.postech.oficinamecanica.application.material.ListLowStockMaterialsUseCase;
 import com.postech.oficinamecanica.application.material.ListMaterialsUseCase;
 import com.postech.oficinamecanica.domain.material.Material;
 import com.postech.oficinamecanica.domain.material.MaterialNotFoundException;
@@ -26,6 +27,9 @@ class MaterialControllerTest {
 
     @MockitoBean
     private ListMaterialsUseCase listMaterialsUseCase;
+
+    @MockitoBean
+    private ListLowStockMaterialsUseCase listLowStockMaterialsUseCase;
 
     @MockitoBean
     private GetMaterialUseCase getMaterialUseCase;

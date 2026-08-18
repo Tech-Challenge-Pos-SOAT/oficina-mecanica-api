@@ -2,6 +2,7 @@ package com.postech.oficinamecanica.interfaces.rest.material;
 
 import com.postech.oficinamecanica.application.material.GetMaterialUseCase;
 import com.postech.oficinamecanica.application.material.ListMaterialsUseCase;
+import com.postech.oficinamecanica.application.material.ListLowStockMaterialsUseCase;
 import com.postech.oficinamecanica.interfaces.rest.config.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -24,11 +25,13 @@ import java.util.List;
 public class MaterialController {
     private final ListMaterialsUseCase listMaterialsUseCase;
     private final GetMaterialUseCase getMaterialUseCase;
+    private final ListLowStockMaterialsUseCase listLowStockUseCase;
     private final MaterialRestMapper mapper;
 
-    public MaterialController(ListMaterialsUseCase listMaterialsUseCase, GetMaterialUseCase getMaterialUseCase, MaterialRestMapper mapper) {
+    public MaterialController(ListMaterialsUseCase listMaterialsUseCase, GetMaterialUseCase getMaterialUseCase, ListLowStockMaterialsUseCase listLowStockUseCase, MaterialRestMapper mapper) {
         this.listMaterialsUseCase = listMaterialsUseCase;
         this.getMaterialUseCase = getMaterialUseCase;
+        this.listLowStockUseCase = listLowStockUseCase;
         this.mapper = mapper;
     }
 
@@ -57,6 +60,33 @@ public class MaterialController {
         @RequestParam(required = false) String status
     ) {
         return listMaterialsUseCase.execute(status)
+            .stream()
+            .map(mapper::toResponse)
+            .toList();
+    }
+
+    @GetMapping("/low-stock")
+    @Operation(
+        summary = "Listar materiais com estoque crítico",
+        description = "Retorna materiais com saldo atual abaixo do estoque mínimo, filtrados por status."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Lista de materiais com estoque crítico recuperada com sucesso",
+            content = @Content(array = @ArraySchema(schema = @Schema(implementation = MaterialResponse.class)))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Status inválido (deve ser ACTIVE ou INACTIVE)",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
+    public List<MaterialResponse> listLowStock(
+        @Parameter(description = "Filtro de status", example = "ACTIVE")
+        @RequestParam(required = false) String status
+    ) {
+        return listLowStockUseCase.execute(status)
             .stream()
             .map(mapper::toResponse)
             .toList();

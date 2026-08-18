@@ -8,4 +8,5 @@ import java.util.Optional;
 public interface MaterialRepository {
     List<Material> findByStatus(EntityStatus status);
     Optional<Material> findById(Long id);
+    List<Material> findLowStockByStatus(EntityStatus status);
 }

@@ -38,8 +38,8 @@ class MaterialJpaRepositoryIntegrationTest {
     void shouldReturnOnlyActiveMaterialsOrderedByIdAscending() {
         List<MaterialJpaEntity> result = repository.findByStatusOrderById(EntityStatus.ACTIVE);
 
-        assertThat(result).hasSize(4);
-        assertThat(result).extracting(MaterialJpaEntity::getId).containsExactly(1L, 2L, 3L, 4L);
+        assertThat(result).hasSize(6);
+        assertThat(result).extracting(MaterialJpaEntity::getId).containsExactly(1L, 2L, 3L, 4L, 6L, 7L);
         assertThat(result).extracting(MaterialJpaEntity::getStatus)
             .containsOnly(EntityStatus.ACTIVE);
     }
@@ -69,5 +69,22 @@ class MaterialJpaRepositoryIntegrationTest {
 
         assertThat(withoutDescription.getName()).isEqualTo("Correia Dentada");
         assertThat(withoutDescription.getDescription()).isNull();
+    }
+
+    @Test
+    void shouldReturnOnlyActiveMaterialsWithStockStrictlyBelowMinimum() {
+        List<MaterialJpaEntity> result = repository.findLowStockByStatusOrderById(EntityStatus.ACTIVE);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo(6L);
+        assertThat(result.get(0).getName()).isEqualTo("Vela de Ignição");
+    }
+
+    @Test
+    void shouldReturnInactiveMaterialsWithLowStock() {
+        List<MaterialJpaEntity> result = repository.findLowStockByStatusOrderById(EntityStatus.INACTIVE);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getId()).isEqualTo(5L);
     }
 }

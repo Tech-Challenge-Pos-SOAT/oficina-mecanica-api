@@ -30,4 +30,12 @@ public class MaterialRepositoryImpl implements MaterialRepository {
         return jpaRepository.findById(id)
             .map(mapper::toDomain);
     }
+
+    @Override
+    public List<Material> findLowStockByStatus(EntityStatus status) {
+        return jpaRepository.findLowStockByStatusOrderById(status)
+            .stream()
+            .map(mapper::toDomain)
+            .toList();
+    }
 }

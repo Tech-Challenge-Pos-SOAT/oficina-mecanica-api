@@ -40,8 +40,8 @@ class MaterialControllerIntegrationTest {
     void shouldReturnActiveMaterialsWhenNoStatusFilterProvided() throws Exception {
         mockMvc.perform(get("/api/materials"))
             .andExpect(status().isOk())
-            .andExpect(jsonPath("$", hasSize(4)))
-            .andExpect(jsonPath("$[*].status", contains("ACTIVE", "ACTIVE", "ACTIVE", "ACTIVE")));
+            .andExpect(jsonPath("$", hasSize(6)))
+            .andExpect(jsonPath("$[*].status", contains("ACTIVE", "ACTIVE", "ACTIVE", "ACTIVE", "ACTIVE", "ACTIVE")));
     }
 
     @Test
@@ -51,7 +51,9 @@ class MaterialControllerIntegrationTest {
             .andExpect(jsonPath("$[0].id").value(1))
             .andExpect(jsonPath("$[1].id").value(2))
             .andExpect(jsonPath("$[2].id").value(3))
-            .andExpect(jsonPath("$[3].id").value(4));
+            .andExpect(jsonPath("$[3].id").value(4))
+            .andExpect(jsonPath("$[4].id").value(6))
+            .andExpect(jsonPath("$[5].id").value(7));
     }
 
     @Test
@@ -119,5 +121,16 @@ class MaterialControllerIntegrationTest {
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.code").value("MATERIAL_NOT_FOUND"))
             .andExpect(jsonPath("$.message").value("Material não encontrado com o ID: 9999"));
+    }
+
+    @Test
+    void shouldReturnLowStockMaterials() throws Exception {
+        mockMvc.perform(get("/api/materials/low-stock"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$", hasSize(1)))
+            .andExpect(jsonPath("$[0].id").value(6))
+            .andExpect(jsonPath("$[0].name").value("Vela de Ignição"))
+            .andExpect(jsonPath("$[0].stockQuantity").value(2))
+            .andExpect(jsonPath("$[0].stockMinimum").value(8));
     }
 }
