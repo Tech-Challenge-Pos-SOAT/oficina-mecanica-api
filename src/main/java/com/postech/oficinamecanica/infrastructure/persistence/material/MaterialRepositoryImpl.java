@@ -5,6 +5,7 @@ import com.postech.oficinamecanica.domain.material.Material;
 import com.postech.oficinamecanica.domain.shared.EntityStatus;
 import org.springframework.stereotype.Repository;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class MaterialRepositoryImpl implements MaterialRepository {
@@ -22,5 +23,11 @@ public class MaterialRepositoryImpl implements MaterialRepository {
             .stream()
             .map(mapper::toDomain)
             .toList();
+    }
+
+    @Override
+    public Optional<Material> findById(Long id) {
+        return jpaRepository.findById(id)
+            .map(mapper::toDomain);
     }
 }

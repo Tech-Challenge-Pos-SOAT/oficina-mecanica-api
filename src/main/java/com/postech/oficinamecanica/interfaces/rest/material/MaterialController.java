@@ -1,5 +1,6 @@
 package com.postech.oficinamecanica.interfaces.rest.material;
 
+import com.postech.oficinamecanica.application.material.GetMaterialUseCase;
 import com.postech.oficinamecanica.application.material.ListMaterialsUseCase;
 import com.postech.oficinamecanica.interfaces.rest.config.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,6 +12,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -21,10 +23,12 @@ import java.util.List;
 @Tag(name = "Materials", description = "Catálogo de materiais e saldo de estoque")
 public class MaterialController {
     private final ListMaterialsUseCase listMaterialsUseCase;
+    private final GetMaterialUseCase getMaterialUseCase;
     private final MaterialRestMapper mapper;
 
-    public MaterialController(ListMaterialsUseCase listMaterialsUseCase, MaterialRestMapper mapper) {
+    public MaterialController(ListMaterialsUseCase listMaterialsUseCase, GetMaterialUseCase getMaterialUseCase, MaterialRestMapper mapper) {
         this.listMaterialsUseCase = listMaterialsUseCase;
+        this.getMaterialUseCase = getMaterialUseCase;
         this.mapper = mapper;
     }
 
@@ -48,8 +52,7 @@ public class MaterialController {
     public List<MaterialResponse> list(
         @Parameter(
             description = "Filtro de status: ACTIVE ou INACTIVE (insensível a maiúsculas)",
-            example = "ACTIVE",
-            required = false
+            example = "ACTIVE"
         )
         @RequestParam(required = false) String status
     ) {
@@ -57,5 +60,29 @@ public class MaterialController {
             .stream()
             .map(mapper::toResponse)
             .toList();
+    }
+
+    @GetMapping("/{id}")
+    @Operation(
+        summary = "Buscar material por ID",
+        description = "Retorna os detalhes completos de um único material a partir de seu ID."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Material encontrado com sucesso",
+            content = @Content(schema = @Schema(implementation = MaterialResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Material não encontrado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
+    public MaterialResponse getById(
+        @Parameter(description = "ID do material a ser buscado", example = "1")
+        @PathVariable Long id
+    ) {
+        return mapper.toResponse(getMaterialUseCase.execute(id));
     }
 }

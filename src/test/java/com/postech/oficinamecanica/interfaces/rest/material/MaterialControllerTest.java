@@ -1,7 +1,9 @@
 package com.postech.oficinamecanica.interfaces.rest.material;
 
+import com.postech.oficinamecanica.application.material.GetMaterialUseCase;
 import com.postech.oficinamecanica.application.material.ListMaterialsUseCase;
 import com.postech.oficinamecanica.domain.material.Material;
+import com.postech.oficinamecanica.domain.material.MaterialNotFoundException;
 import com.postech.oficinamecanica.domain.shared.EntityStatus;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +26,9 @@ class MaterialControllerTest {
 
     @MockitoBean
     private ListMaterialsUseCase listMaterialsUseCase;
+
+    @MockitoBean
+    private GetMaterialUseCase getMaterialUseCase;
 
     @MockitoBean
     private MaterialRestMapper mapper;
@@ -73,6 +78,31 @@ class MaterialControllerTest {
         mockMvc.perform(get("/api/materials?status=ARCHIVED"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.code").value("INVALID_STATUS"));
+    }
+
+    @Test
+    void shouldReturnMaterialWhenFoundById() throws Exception {
+        Long id = 1L;
+        Material material = aMaterial(id, "Filtro de Oleo", EntityStatus.ACTIVE);
+        when(getMaterialUseCase.execute(id)).thenReturn(material);
+        when(mapper.toResponse(material)).thenReturn(aResponse(id, "Filtro de Oleo", "ACTIVE"));
+
+        mockMvc.perform(get("/api/materials/{id}", id))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(id))
+            .andExpect(jsonPath("$.name").value("Filtro de Oleo"))
+            .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenMaterialDoesNotExist() throws Exception {
+        Long id = 999L;
+        when(getMaterialUseCase.execute(id)).thenThrow(new MaterialNotFoundException(id));
+
+        mockMvc.perform(get("/api/materials/{id}", id))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.code").value("MATERIAL_NOT_FOUND"))
+            .andExpect(jsonPath("$.message").value("Material não encontrado com o ID: 999"));
     }
 
     private static Material aMaterial(Long id, String name, EntityStatus status) {

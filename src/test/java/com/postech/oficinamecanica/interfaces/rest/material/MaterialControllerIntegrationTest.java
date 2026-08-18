@@ -102,4 +102,22 @@ class MaterialControllerIntegrationTest {
             .andExpect(jsonPath("$.code").value("INVALID_STATUS"))
             .andExpect(jsonPath("$.status").value(400));
     }
+
+    @Test
+    void shouldReturnMaterialWhenFetchedById() throws Exception {
+        mockMvc.perform(get("/api/materials/{id}", 1L))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(1))
+            .andExpect(jsonPath("$.name").value("Óleo Motor 5W30 Sintético"))
+            .andExpect(jsonPath("$.price").value(189.90))
+            .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenFetchedWithNonExistentId() throws Exception {
+        mockMvc.perform(get("/api/materials/{id}", 9999L))
+            .andExpect(status().isNotFound())
+            .andExpect(jsonPath("$.code").value("MATERIAL_NOT_FOUND"))
+            .andExpect(jsonPath("$.message").value("Material não encontrado com o ID: 9999"));
+    }
 }
