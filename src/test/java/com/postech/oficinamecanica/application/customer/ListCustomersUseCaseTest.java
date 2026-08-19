@@ -69,7 +69,7 @@ class ListCustomersUseCaseTest {
     void shouldReturnInactiveCustomersWhenStatusIsInactive() {
         Customer customer = new Customer(
             2L,
-            new Document("98765432109"),
+            new Document("11144477735"),
             "João Silva",
             "11912345678",
             "joao@email.com",
