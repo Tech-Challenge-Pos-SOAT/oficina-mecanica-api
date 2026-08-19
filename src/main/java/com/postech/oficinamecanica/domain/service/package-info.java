@@ -1,1 +1,1 @@
-package com.postech.oficinamecanica.domain.servico;
+package com.postech.oficinamecanica.domain.service;
