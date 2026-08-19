@@ -8,4 +8,5 @@ import org.mapstruct.ReportingPolicy;
 public interface MaterialPersistenceMapper {
 
     Material toDomain(MaterialJpaEntity entity);
+    MaterialJpaEntity toPersistence(Material domain);
 }

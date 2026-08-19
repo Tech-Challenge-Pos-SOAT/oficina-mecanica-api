@@ -38,4 +38,11 @@ public class MaterialRepositoryImpl implements MaterialRepository {
             .map(mapper::toDomain)
             .toList();
     }
+
+    @Override
+    public Material save(Material material) {
+        MaterialJpaEntity entity = mapper.toPersistence(material);
+        MaterialJpaEntity savedEntity = jpaRepository.save(entity);
+        return mapper.toDomain(savedEntity);
+    }
 }

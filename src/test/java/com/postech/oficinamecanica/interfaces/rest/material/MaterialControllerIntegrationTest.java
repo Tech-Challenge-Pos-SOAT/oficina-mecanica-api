@@ -14,6 +14,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -132,5 +133,32 @@ class MaterialControllerIntegrationTest {
             .andExpect(jsonPath("$[0].name").value("Vela de Ignição"))
             .andExpect(jsonPath("$[0].stockQuantity").value(2))
             .andExpect(jsonPath("$[0].stockMinimum").value(8));
+    }
+
+    @Test
+    void shouldSuccessfullyPatchMaterialStatus() throws Exception {
+        mockMvc.perform(patch("/api/materials/1/status")
+                .contentType("application/json")
+                .content("{\"status\": \"INACTIVE\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(1))
+            .andExpect(jsonPath("$.status").value("INACTIVE"));
+
+        mockMvc.perform(get("/api/materials").param("status", "INACTIVE"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[*].id", contains(1, 5)));
+
+        mockMvc.perform(patch("/api/materials/1/status")
+                .contentType("application/json")
+                .content("{\"status\": \"ACTIVE\"}"))
+            .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenStatusIsInvalidOnPatch() throws Exception {
+        mockMvc.perform(patch("/api/materials/1/status")
+                .contentType("application/json")
+                .content("{\"status\": \"INVALID_STATUS\"}"))
+            .andExpect(status().isBadRequest());
     }
 }

@@ -1,5 +1,6 @@
 package com.postech.oficinamecanica.interfaces.rest.material;
 
+import com.postech.oficinamecanica.application.material.ChangeMaterialStatusUseCase;
 import com.postech.oficinamecanica.application.material.GetMaterialUseCase;
 import com.postech.oficinamecanica.application.material.ListLowStockMaterialsUseCase;
 import com.postech.oficinamecanica.application.material.ListMaterialsUseCase;
@@ -17,6 +18,7 @@ import java.util.List;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -33,6 +35,9 @@ class MaterialControllerTest {
 
     @MockitoBean
     private GetMaterialUseCase getMaterialUseCase;
+
+    @MockitoBean
+    private ChangeMaterialStatusUseCase changeMaterialStatusUseCase;
 
     @MockitoBean
     private MaterialRestMapper mapper;
@@ -107,6 +112,20 @@ class MaterialControllerTest {
             .andExpect(status().isNotFound())
             .andExpect(jsonPath("$.code").value("MATERIAL_NOT_FOUND"))
             .andExpect(jsonPath("$.message").value("Material não encontrado com o ID: 999"));
+    }
+
+    @Test
+    void shouldUpdateMaterialStatus() throws Exception {
+        Material material = aMaterial(1L, "Filtro de Oleo", EntityStatus.INACTIVE);
+        when(changeMaterialStatusUseCase.execute(1L, "INACTIVE")).thenReturn(material);
+        when(mapper.toResponse(material)).thenReturn(aResponse(1L, "Filtro de Oleo", "INACTIVE"));
+
+        mockMvc.perform(patch("/api/materials/1/status")
+                .contentType("application/json")
+                .content("{\"status\": \"INACTIVE\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(1))
+            .andExpect(jsonPath("$.status").value("INACTIVE"));
     }
 
     private static Material aMaterial(Long id, String name, EntityStatus status) {

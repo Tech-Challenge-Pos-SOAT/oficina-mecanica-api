@@ -11,9 +11,9 @@ public class Material {
     private final BigDecimal price;
     private final Integer stockQuantity;
     private final Integer stockMinimum;
-    private final EntityStatus status;
+    private EntityStatus status;
     private final Instant createdAt;
-    private final Instant updatedAt;
+    private Instant updatedAt;
 
     public Material(Long id, String name, String description, BigDecimal price,
                     Integer stockQuantity, Integer stockMinimum, EntityStatus status,
@@ -38,4 +38,12 @@ public class Material {
     public EntityStatus getStatus() { return status; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
+
+    public void changeStatus(EntityStatus newStatus) {
+        if (newStatus == null) {
+            throw new IllegalArgumentException("Status cannot be null");
+        }
+        this.status = newStatus;
+        this.updatedAt = Instant.now();
+    }
 }
