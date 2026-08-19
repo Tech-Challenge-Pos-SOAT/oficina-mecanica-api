@@ -5,6 +5,7 @@ import com.postech.oficinamecanica.application.material.CreateMaterialUseCase;
 import com.postech.oficinamecanica.application.material.GetMaterialUseCase;
 import com.postech.oficinamecanica.application.material.ListLowStockMaterialsUseCase;
 import com.postech.oficinamecanica.application.material.ListMaterialsUseCase;
+import com.postech.oficinamecanica.application.material.UpdateMaterialUseCase;
 import com.postech.oficinamecanica.domain.material.Material;
 import com.postech.oficinamecanica.domain.shared.EntityStatus;
 import com.postech.oficinamecanica.domain.shared.exceptions.ResourceNotFoundException;
@@ -21,6 +22,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -43,6 +45,9 @@ class MaterialControllerTest {
 
     @MockitoBean
     private CreateMaterialUseCase createMaterialUseCase;
+
+    @MockitoBean
+    private UpdateMaterialUseCase updateMaterialUseCase;
 
     @MockitoBean
     private MaterialRestMapper mapper;
@@ -154,6 +159,30 @@ class MaterialControllerTest {
                 .content(payload))
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.id").value(10))
+            .andExpect(jsonPath("$.name").value("Amortecedor"));
+    }
+
+    @Test
+    void shouldUpdateMaterial() throws Exception {
+        Material material = aMaterial(1L, "Amortecedor", EntityStatus.ACTIVE);
+        when(updateMaterialUseCase.execute(1L, "Amortecedor", "Desc", new BigDecimal("520.00"), 15, 3)).thenReturn(material);
+        when(mapper.toResponse(material)).thenReturn(aResponse(1L, "Amortecedor", "ACTIVE"));
+
+        String payload = """
+            {
+                "name": "Amortecedor",
+                "description": "Desc",
+                "price": 520.00,
+                "stockQuantity": 15,
+                "stockMinimum": 3
+            }
+            """;
+
+        mockMvc.perform(put("/api/materials/1")
+                .contentType("application/json")
+                .content(payload))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.id").value(1))
             .andExpect(jsonPath("$.name").value("Amortecedor"));
     }
 

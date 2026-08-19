@@ -5,6 +5,7 @@ import com.postech.oficinamecanica.application.material.CreateMaterialUseCase;
 import com.postech.oficinamecanica.application.material.GetMaterialUseCase;
 import com.postech.oficinamecanica.application.material.ListMaterialsUseCase;
 import com.postech.oficinamecanica.application.material.ListLowStockMaterialsUseCase;
+import com.postech.oficinamecanica.application.material.UpdateMaterialUseCase;
 import com.postech.oficinamecanica.interfaces.rest.config.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -36,14 +38,16 @@ public class MaterialController {
     private final ListLowStockMaterialsUseCase listLowStockUseCase;
     private final ChangeMaterialStatusUseCase changeMaterialStatusUseCase;
     private final CreateMaterialUseCase createMaterialUseCase;
+    private final UpdateMaterialUseCase updateMaterialUseCase;
     private final MaterialRestMapper mapper;
 
-    public MaterialController(ListMaterialsUseCase listMaterialsUseCase, GetMaterialUseCase getMaterialUseCase, ListLowStockMaterialsUseCase listLowStockUseCase, ChangeMaterialStatusUseCase changeMaterialStatusUseCase, CreateMaterialUseCase createMaterialUseCase, MaterialRestMapper mapper) {
+    public MaterialController(ListMaterialsUseCase listMaterialsUseCase, GetMaterialUseCase getMaterialUseCase, ListLowStockMaterialsUseCase listLowStockUseCase, ChangeMaterialStatusUseCase changeMaterialStatusUseCase, CreateMaterialUseCase createMaterialUseCase, UpdateMaterialUseCase updateMaterialUseCase, MaterialRestMapper mapper) {
         this.listMaterialsUseCase = listMaterialsUseCase;
         this.getMaterialUseCase = getMaterialUseCase;
         this.listLowStockUseCase = listLowStockUseCase;
         this.changeMaterialStatusUseCase = changeMaterialStatusUseCase;
         this.createMaterialUseCase = createMaterialUseCase;
+        this.updateMaterialUseCase = updateMaterialUseCase;
         this.mapper = mapper;
     }
 
@@ -181,5 +185,39 @@ public class MaterialController {
             request.stockMinimum()
         );
         return mapper.toResponse(created);
+    }
+
+    @PutMapping("/{id}")
+    @Operation(summary = "Atualizar material", description = "Atualiza nome, descrição, preço e estoques de um material existente. Status e datas de auditoria não são alteráveis por este endpoint.")
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Material atualizado com sucesso",
+            content = @Content(schema = @Schema(implementation = MaterialResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Dados inválidos (valores negativos, nome duplicado)",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Material não encontrado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
+    public MaterialResponse update(
+        @Parameter(description = "ID do Material") @PathVariable Long id,
+        @Valid @RequestBody MaterialUpdateRequest request
+    ) {
+        var updated = updateMaterialUseCase.execute(
+            id,
+            request.name(),
+            request.description(),
+            request.price(),
+            request.stockQuantity(),
+            request.stockMinimum()
+        );
+        return mapper.toResponse(updated);
     }
 }
