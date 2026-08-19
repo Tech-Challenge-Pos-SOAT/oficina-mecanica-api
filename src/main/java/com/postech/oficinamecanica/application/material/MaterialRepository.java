@@ -10,4 +10,5 @@ public interface MaterialRepository {
     Optional<Material> findById(Long id);
     List<Material> findLowStockByStatus(EntityStatus status);
     Material save(Material material);
+    boolean existsByName(String name);
 }

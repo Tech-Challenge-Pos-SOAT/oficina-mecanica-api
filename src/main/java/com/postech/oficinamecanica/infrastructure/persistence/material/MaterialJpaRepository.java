@@ -12,4 +12,6 @@ public interface MaterialJpaRepository extends JpaRepository<MaterialJpaEntity, 
 
     @Query("SELECT m FROM MaterialJpaEntity m WHERE m.status = :status AND m.stockQuantity < m.stockMinimum ORDER BY m.id ASC")
     List<MaterialJpaEntity> findLowStockByStatusOrderById(@Param("status") EntityStatus status);
+
+    boolean existsByName(String name);
 }

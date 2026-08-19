@@ -1,6 +1,7 @@
 package com.postech.oficinamecanica.interfaces.rest.material;
 
 import com.postech.oficinamecanica.application.material.ChangeMaterialStatusUseCase;
+import com.postech.oficinamecanica.application.material.CreateMaterialUseCase;
 import com.postech.oficinamecanica.application.material.GetMaterialUseCase;
 import com.postech.oficinamecanica.application.material.ListMaterialsUseCase;
 import com.postech.oficinamecanica.application.material.ListLowStockMaterialsUseCase;
@@ -13,12 +14,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
@@ -30,13 +35,15 @@ public class MaterialController {
     private final GetMaterialUseCase getMaterialUseCase;
     private final ListLowStockMaterialsUseCase listLowStockUseCase;
     private final ChangeMaterialStatusUseCase changeMaterialStatusUseCase;
+    private final CreateMaterialUseCase createMaterialUseCase;
     private final MaterialRestMapper mapper;
 
-    public MaterialController(ListMaterialsUseCase listMaterialsUseCase, GetMaterialUseCase getMaterialUseCase, ListLowStockMaterialsUseCase listLowStockUseCase, ChangeMaterialStatusUseCase changeMaterialStatusUseCase, MaterialRestMapper mapper) {
+    public MaterialController(ListMaterialsUseCase listMaterialsUseCase, GetMaterialUseCase getMaterialUseCase, ListLowStockMaterialsUseCase listLowStockUseCase, ChangeMaterialStatusUseCase changeMaterialStatusUseCase, CreateMaterialUseCase createMaterialUseCase, MaterialRestMapper mapper) {
         this.listMaterialsUseCase = listMaterialsUseCase;
         this.getMaterialUseCase = getMaterialUseCase;
         this.listLowStockUseCase = listLowStockUseCase;
         this.changeMaterialStatusUseCase = changeMaterialStatusUseCase;
+        this.createMaterialUseCase = createMaterialUseCase;
         this.mapper = mapper;
     }
 
@@ -146,5 +153,33 @@ public class MaterialController {
     ) {
         var updated = changeMaterialStatusUseCase.execute(id, request.status());
         return mapper.toResponse(updated);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Criar novo material", description = "Cadastra um novo material no catálogo. O status padrão é ACTIVE.")
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "201",
+            description = "Material criado com sucesso",
+            content = @Content(schema = @Schema(implementation = MaterialResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Dados inválidos ou material com nome duplicado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
+    public MaterialResponse create(
+        @Valid @RequestBody MaterialCreateRequest request
+    ) {
+        var created = createMaterialUseCase.execute(
+            request.name(),
+            request.description(),
+            request.price(),
+            request.stockQuantity(),
+            request.stockMinimum()
+        );
+        return mapper.toResponse(created);
     }
 }

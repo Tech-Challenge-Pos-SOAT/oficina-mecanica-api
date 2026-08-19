@@ -1,8 +1,8 @@
 package com.postech.oficinamecanica.application.material;
 
 import com.postech.oficinamecanica.domain.material.Material;
-import com.postech.oficinamecanica.domain.material.MaterialNotFoundException;
 import com.postech.oficinamecanica.domain.shared.EntityStatus;
+import com.postech.oficinamecanica.domain.shared.exceptions.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -47,8 +47,8 @@ class GetMaterialUseCaseTest {
         when(repository.findById(id)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(id))
-            .isInstanceOf(MaterialNotFoundException.class)
-            .hasMessageContaining("Material não encontrado com o ID: 999");
+            .isInstanceOf(ResourceNotFoundException.class)
+            .hasMessageContaining("Material com identificador '999' não foi encontrado.");
         verify(repository).findById(id);
     }
 }

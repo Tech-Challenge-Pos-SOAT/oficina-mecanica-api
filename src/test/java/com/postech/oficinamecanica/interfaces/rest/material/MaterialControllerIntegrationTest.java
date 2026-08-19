@@ -15,6 +15,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -120,8 +121,8 @@ class MaterialControllerIntegrationTest {
     void shouldReturnNotFoundWhenFetchedWithNonExistentId() throws Exception {
         mockMvc.perform(get("/api/materials/{id}", 9999L))
             .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.code").value("MATERIAL_NOT_FOUND"))
-            .andExpect(jsonPath("$.message").value("Material não encontrado com o ID: 9999"));
+            .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"))
+            .andExpect(jsonPath("$.message").value("Material com identificador '9999' não foi encontrado."));
     }
 
     @Test
@@ -159,6 +160,61 @@ class MaterialControllerIntegrationTest {
         mockMvc.perform(patch("/api/materials/1/status")
                 .contentType("application/json")
                 .content("{\"status\": \"INVALID_STATUS\"}"))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldSuccessfullyCreateNewMaterial() throws Exception {
+        String payload = """
+            {
+                "name": "Pneu Aro 15",
+                "description": "Pneu para carros de passeio",
+                "price": 380.00,
+                "stockQuantity": 40,
+                "stockMinimum": 4
+            }
+            """;
+
+        mockMvc.perform(post("/api/materials")
+                .contentType("application/json")
+                .content(payload))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").exists())
+            .andExpect(jsonPath("$.name").value("Pneu Aro 15"))
+            .andExpect(jsonPath("$.status").value("ACTIVE"));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenCreatingMaterialWithExistingName() throws Exception {
+        String payload = """
+            {
+                "name": "Filtro de Óleo",
+                "price": 50.00,
+                "stockQuantity": 10,
+                "stockMinimum": 2
+            }
+            """;
+
+        mockMvc.perform(post("/api/materials")
+                .contentType("application/json")
+                .content(payload))
+            .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenNegativeValuesAreProvided() throws Exception {
+        String payload = """
+            {
+                "name": "Peça Negativa",
+                "price": -10.00,
+                "stockQuantity": -5,
+                "stockMinimum": -1
+            }
+            """;
+
+        mockMvc.perform(post("/api/materials")
+                .contentType("application/json")
+                .content(payload))
             .andExpect(status().isBadRequest());
     }
 }

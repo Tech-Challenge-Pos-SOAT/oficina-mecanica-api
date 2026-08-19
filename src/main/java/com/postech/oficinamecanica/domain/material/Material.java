@@ -1,6 +1,8 @@
 package com.postech.oficinamecanica.domain.material;
 
 import com.postech.oficinamecanica.domain.shared.EntityStatus;
+import com.postech.oficinamecanica.domain.shared.exceptions.InvalidParametersException;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -18,6 +20,17 @@ public class Material {
     public Material(Long id, String name, String description, BigDecimal price,
                     Integer stockQuantity, Integer stockMinimum, EntityStatus status,
                     Instant createdAt, Instant updatedAt) {
+
+        if (price != null && price.compareTo(BigDecimal.ZERO) < 0) {
+            throw new InvalidParametersException("price", "Price cannot be negative");
+        }
+        if (stockQuantity != null && stockQuantity < 0) {
+            throw new InvalidParametersException("stockQuantity", "Stock quantity cannot be negative");
+        }
+        if (stockMinimum != null && stockMinimum < 0) {
+            throw new InvalidParametersException("stockMinimum", "Stock minimum cannot be negative");
+        }
+
         this.id = id;
         this.name = name;
         this.description = description;

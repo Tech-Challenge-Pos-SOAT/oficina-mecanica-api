@@ -1,12 +1,13 @@
 package com.postech.oficinamecanica.interfaces.rest.material;
 
 import com.postech.oficinamecanica.application.material.ChangeMaterialStatusUseCase;
+import com.postech.oficinamecanica.application.material.CreateMaterialUseCase;
 import com.postech.oficinamecanica.application.material.GetMaterialUseCase;
 import com.postech.oficinamecanica.application.material.ListLowStockMaterialsUseCase;
 import com.postech.oficinamecanica.application.material.ListMaterialsUseCase;
 import com.postech.oficinamecanica.domain.material.Material;
-import com.postech.oficinamecanica.domain.material.MaterialNotFoundException;
 import com.postech.oficinamecanica.domain.shared.EntityStatus;
+import com.postech.oficinamecanica.domain.shared.exceptions.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -19,6 +20,7 @@ import java.util.List;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -38,6 +40,9 @@ class MaterialControllerTest {
 
     @MockitoBean
     private ChangeMaterialStatusUseCase changeMaterialStatusUseCase;
+
+    @MockitoBean
+    private CreateMaterialUseCase createMaterialUseCase;
 
     @MockitoBean
     private MaterialRestMapper mapper;
@@ -106,12 +111,12 @@ class MaterialControllerTest {
     @Test
     void shouldReturnNotFoundWhenMaterialDoesNotExist() throws Exception {
         Long id = 999L;
-        when(getMaterialUseCase.execute(id)).thenThrow(new MaterialNotFoundException(id));
+        when(getMaterialUseCase.execute(id)).thenThrow(new ResourceNotFoundException("Material", id));
 
         mockMvc.perform(get("/api/materials/{id}", id))
             .andExpect(status().isNotFound())
-            .andExpect(jsonPath("$.code").value("MATERIAL_NOT_FOUND"))
-            .andExpect(jsonPath("$.message").value("Material não encontrado com o ID: 999"));
+            .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"))
+            .andExpect(jsonPath("$.message").value("Material com identificador '999' não foi encontrado."));
     }
 
     @Test
@@ -126,6 +131,30 @@ class MaterialControllerTest {
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(1))
             .andExpect(jsonPath("$.status").value("INACTIVE"));
+    }
+
+    @Test
+    void shouldCreateMaterial() throws Exception {
+        Material material = aMaterial(10L, "Amortecedor", EntityStatus.ACTIVE);
+        when(createMaterialUseCase.execute("Amortecedor", "Desc", new BigDecimal("450.00"), 10, 2)).thenReturn(material);
+        when(mapper.toResponse(material)).thenReturn(aResponse(10L, "Amortecedor", "ACTIVE"));
+
+        String payload = """
+            {
+                "name": "Amortecedor",
+                "description": "Desc",
+                "price": 450.00,
+                "stockQuantity": 10,
+                "stockMinimum": 2
+            }
+            """;
+
+        mockMvc.perform(post("/api/materials")
+                .contentType("application/json")
+                .content(payload))
+            .andExpect(status().isCreated())
+            .andExpect(jsonPath("$.id").value(10))
+            .andExpect(jsonPath("$.name").value("Amortecedor"));
     }
 
     private static Material aMaterial(Long id, String name, EntityStatus status) {

@@ -136,6 +136,20 @@ class MaterialJpaRepositoryIntegrationTest {
         assertThat(fetchAgain.getStatus()).isEqualTo(EntityStatus.INACTIVE);
     }
 
+    @Test
+    void shouldReturnTrueWhenNameExists() {
+        repository.save(aMaterial("Filtro de Óleo", EntityStatus.ACTIVE, 4, 2, "70.00"));
+
+        boolean exists = repository.existsByName("Filtro de Óleo");
+        assertThat(exists).isTrue();
+    }
+
+    @Test
+    void shouldReturnFalseWhenNameDoesNotExist() {
+        boolean exists = repository.existsByName("Produto Inexistente 999");
+        assertThat(exists).isFalse();
+    }
+
     private MaterialJpaEntity aMaterial(String name, EntityStatus status, int stock, int minStock, String price) {
         MaterialJpaEntity entity = new MaterialJpaEntity();
         entity.setName(name);

@@ -45,4 +45,9 @@ public class MaterialRepositoryImpl implements MaterialRepository {
         MaterialJpaEntity savedEntity = jpaRepository.save(entity);
         return mapper.toDomain(savedEntity);
     }
+
+    @Override
+    public boolean existsByName(String name) {
+        return jpaRepository.existsByName(name);
+    }
 }
