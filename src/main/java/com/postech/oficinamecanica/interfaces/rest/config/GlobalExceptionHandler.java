@@ -9,7 +9,9 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
@@ -67,6 +69,35 @@ public class GlobalExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+
+        String paramName = ex.getName();
+        Object providedValue = ex.getValue();
+        Class<?> requiredType = ex.getRequiredType();
+
+        StringBuilder message = new StringBuilder(
+                String.format("O parâmetro '%s' recebeu o valor '%s', que é inválido. ", paramName, providedValue)
+        );
+
+        if (requiredType != null) {
+            if (requiredType.isEnum()) {
+                String acceptedValues = Arrays.stream(requiredType.getEnumConstants())
+                        .map(Object::toString)
+                        .collect(Collectors.joining(", "));
+
+                message.append(String.format("Os valores aceitos são: [%s].", acceptedValues));
+            } else {
+                message.append(String.format("O tipo esperado é: %s.", requiredType.getSimpleName()));
+            }
+        }
+
+        ErrorResponse error = new ErrorResponse("INVALID_PARAMETER_TYPE", message.toString(), HttpStatus.BAD_REQUEST.value());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
+    }
+
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception e) {
