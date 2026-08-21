@@ -1,5 +1,6 @@
 package com.postech.oficinamecanica.interfaces.rest.materialtransaction;
 
+import com.postech.oficinamecanica.application.materialtransaction.GetMaterialTransactionByIdUseCase;
 import com.postech.oficinamecanica.application.materialtransaction.ListMaterialTransactionsUseCase;
 import com.postech.oficinamecanica.domain.materialtransaction.MaterialTransaction;
 import com.postech.oficinamecanica.domain.materialtransaction.TransactionType;
@@ -18,6 +19,7 @@ import java.util.List;
 class MaterialTransactionControllerTest {
     @Autowired private MockMvc mockMvc;
     @MockitoBean private ListMaterialTransactionsUseCase useCase;
+    @MockitoBean private GetMaterialTransactionByIdUseCase getByIdUseCase;
     @MockitoBean private MaterialTransactionRestMapper mapper;
 
     @Test

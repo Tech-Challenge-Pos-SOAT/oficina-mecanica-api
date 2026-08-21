@@ -1,5 +1,6 @@
 package com.postech.oficinamecanica.interfaces.rest.materialtransaction;
 
+import com.postech.oficinamecanica.application.materialtransaction.GetMaterialTransactionByIdUseCase;
 import com.postech.oficinamecanica.application.materialtransaction.ListMaterialTransactionsUseCase;
 import com.postech.oficinamecanica.domain.materialtransaction.TransactionType;
 import com.postech.oficinamecanica.interfaces.rest.config.ErrorResponse;
@@ -13,6 +14,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,13 +26,16 @@ import java.util.List;
 @Tag(name = "Material Transactions", description = "Movimentações de estoque de materiais")
 public class MaterialTransactionController {
     private final ListMaterialTransactionsUseCase listMaterialTransactionsUseCase;
+    private final GetMaterialTransactionByIdUseCase getByIdUseCase;
     private final MaterialTransactionRestMapper mapper;
 
     public MaterialTransactionController(
         ListMaterialTransactionsUseCase listMaterialTransactionsUseCase,
+        GetMaterialTransactionByIdUseCase getByIdUseCase,
         MaterialTransactionRestMapper mapper
     ) {
         this.listMaterialTransactionsUseCase = listMaterialTransactionsUseCase;
+        this.getByIdUseCase = getByIdUseCase;
         this.mapper = mapper;
     }
 
@@ -62,5 +67,30 @@ public class MaterialTransactionController {
             .stream()
             .map(mapper::toResponse)
             .toList();
+    }
+
+    @GetMapping("/{id}")
+    @Operation(
+        summary = "Buscar movimentação de estoque por ID",
+        description = "Retorna os detalhes completos de uma transação de material a partir de seu ID."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Transação encontrada com sucesso",
+            content = @Content(schema = @Schema(implementation = MaterialTransactionResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Transação não encontrada",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
+    public MaterialTransactionResponse getById(
+        @Parameter(description = "ID da movimentação", example = "1")
+        @PathVariable Long id
+    ) {
+        var transaction = getByIdUseCase.execute(id);
+        return mapper.toResponse(transaction);
     }
 }

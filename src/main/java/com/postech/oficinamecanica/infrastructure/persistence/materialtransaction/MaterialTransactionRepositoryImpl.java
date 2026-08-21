@@ -5,6 +5,7 @@ import com.postech.oficinamecanica.domain.materialtransaction.MaterialTransactio
 import com.postech.oficinamecanica.domain.materialtransaction.TransactionType;
 import org.springframework.stereotype.Repository;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public class MaterialTransactionRepositoryImpl implements MaterialTransactionRepository {
@@ -35,5 +36,11 @@ public class MaterialTransactionRepositoryImpl implements MaterialTransactionRep
         MaterialTransactionJpaEntity entity = mapper.toPersistence(transaction);
         MaterialTransactionJpaEntity saved = jpaRepository.save(entity);
         return mapper.toDomain(saved);
+    }
+
+    @Override
+    public Optional<MaterialTransaction> findById(Long id) {
+        return jpaRepository.findById(id)
+                .map(mapper::toDomain);
     }
 }
