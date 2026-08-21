@@ -5,6 +5,7 @@ import com.postech.oficinamecanica.application.material.CreateMaterialUseCase;
 import com.postech.oficinamecanica.application.material.GetMaterialUseCase;
 import com.postech.oficinamecanica.application.material.ListLowStockMaterialsUseCase;
 import com.postech.oficinamecanica.application.material.ListMaterialsUseCase;
+import com.postech.oficinamecanica.application.material.StockEntryUseCase;
 import com.postech.oficinamecanica.application.material.UpdateMaterialUseCase;
 import com.postech.oficinamecanica.domain.material.Material;
 import com.postech.oficinamecanica.domain.shared.EntityStatus;
@@ -48,6 +49,9 @@ class MaterialControllerTest {
 
     @MockitoBean
     private UpdateMaterialUseCase updateMaterialUseCase;
+
+    @MockitoBean
+    private StockEntryUseCase stockEntryUseCase;
 
     @MockitoBean
     private MaterialRestMapper mapper;

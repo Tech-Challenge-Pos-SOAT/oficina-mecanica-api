@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface MaterialTransactionRepository {
     List<MaterialTransaction> findAll(TransactionType type);
+    MaterialTransaction save(MaterialTransaction transaction);
 }

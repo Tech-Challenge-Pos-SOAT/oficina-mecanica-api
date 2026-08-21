@@ -15,4 +15,15 @@ public interface MaterialTransactionPersistenceMapper {
     @Mapping(target = "type", source = "type")
     @Mapping(target = "createdAt", source = "createdAt")
     MaterialTransaction toDomain(MaterialTransactionJpaEntity entity);
+
+    default MaterialTransactionJpaEntity toPersistence(MaterialTransaction domain) {
+        return new MaterialTransactionJpaEntity(
+                domain.getId(),
+                domain.getMaterialId(),
+                domain.getServiceOrderId(),
+                domain.getQuantity(),
+                domain.getType(),
+                domain.getCreatedAt()
+        );
+    }
 }

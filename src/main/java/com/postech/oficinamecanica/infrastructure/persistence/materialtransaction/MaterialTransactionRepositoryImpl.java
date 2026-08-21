@@ -29,4 +29,11 @@ public class MaterialTransactionRepositoryImpl implements MaterialTransactionRep
                 .map(mapper::toDomain)
                 .toList();
     }
+
+    @Override
+    public MaterialTransaction save(MaterialTransaction transaction) {
+        MaterialTransactionJpaEntity entity = mapper.toPersistence(transaction);
+        MaterialTransactionJpaEntity saved = jpaRepository.save(entity);
+        return mapper.toDomain(saved);
+    }
 }

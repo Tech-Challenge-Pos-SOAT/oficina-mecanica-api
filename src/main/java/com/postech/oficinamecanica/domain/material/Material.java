@@ -11,7 +11,7 @@ public class Material {
     private final String name;
     private final String description;
     private final BigDecimal price;
-    private final Integer stockQuantity;
+    private Integer stockQuantity;
     private final Integer stockMinimum;
     private EntityStatus status;
     private final Instant createdAt;
@@ -57,6 +57,14 @@ public class Material {
             throw new IllegalArgumentException("Status cannot be null");
         }
         this.status = newStatus;
+        this.updatedAt = Instant.now();
+    }
+
+    public void addStock(Integer quantityToAdd) {
+        if (quantityToAdd == null || quantityToAdd <= 0) {
+            throw new IllegalArgumentException("Quantity to add must be greater than zero");
+        }
+        this.stockQuantity += quantityToAdd;
         this.updatedAt = Instant.now();
     }
 }

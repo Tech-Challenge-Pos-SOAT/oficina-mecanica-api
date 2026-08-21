@@ -1,8 +1,10 @@
 package com.postech.oficinamecanica.interfaces.rest.material;
 
+import com.postech.oficinamecanica.domain.materialtransaction.TransactionType;
 import com.postech.oficinamecanica.domain.shared.EntityStatus;
 import com.postech.oficinamecanica.infrastructure.persistence.material.MaterialJpaEntity;
 import com.postech.oficinamecanica.infrastructure.persistence.material.MaterialJpaRepository;
+import com.postech.oficinamecanica.infrastructure.persistence.materialtransaction.MaterialTransactionJpaRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +21,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.math.BigDecimal;
 import java.time.Instant;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -47,8 +50,12 @@ class MaterialControllerIntegrationTest {
     @Autowired
     private MaterialJpaRepository repository;
 
+    @Autowired
+    private MaterialTransactionJpaRepository transactionRepository;
+
     @BeforeEach
     void setUp() {
+        transactionRepository.deleteAll();
         repository.deleteAll();
     }
 
@@ -351,6 +358,60 @@ class MaterialControllerIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldSuccessfullyRegisterStockEntry() throws Exception {
+        var saved = repository.save(aMaterial("Óleo 5W30", EntityStatus.ACTIVE));
+
+        mockMvc.perform(post("/api/materials/{id}/stock-entry", saved.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quantity\": 10}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(saved.getId().intValue()))
+                .andExpect(jsonPath("$.name").value("Óleo 5W30"))
+                .andExpect(jsonPath("$.stockQuantity").value(20))
+                .andExpect(jsonPath("$.status").value("ACTIVE"));
+
+        var transactions = transactionRepository.findAll();
+        assertThat(transactions).hasSize(1);
+        var transaction = transactions.get(0);
+        assertThat(transaction.getMaterialId()).isEqualTo(saved.getId());
+        assertThat(transaction.getQuantity()).isEqualTo(10);
+        assertThat(transaction.getType()).isEqualTo(TransactionType.IN);
+    }
+
+    @Test
+    void shouldReturnNotFoundWhenStockEntryForNonExistentMaterial() throws Exception {
+        mockMvc.perform(post("/api/materials/{id}/stock-entry", 9999)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quantity\": 10}"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"));
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenStockEntryQuantityIsZero() throws Exception {
+        var saved = repository.save(aMaterial("Filtro", EntityStatus.ACTIVE));
+
+        mockMvc.perform(post("/api/materials/{id}/stock-entry", saved.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quantity\": 0}"))
+                .andExpect(status().isBadRequest());
+
+        assertThat(transactionRepository.count()).isZero();
+    }
+
+    @Test
+    void shouldReturnBadRequestWhenStockEntryQuantityIsNegative() throws Exception {
+        var saved = repository.save(aMaterial("Filtro", EntityStatus.ACTIVE));
+
+        mockMvc.perform(post("/api/materials/{id}/stock-entry", saved.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"quantity\": -5}"))
+                .andExpect(status().isBadRequest());
+
+        assertThat(transactionRepository.count()).isZero();
     }
 
     private MaterialJpaEntity aMaterial(String name, EntityStatus status) {

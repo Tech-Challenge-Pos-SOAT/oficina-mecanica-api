@@ -5,6 +5,7 @@ import com.postech.oficinamecanica.application.material.CreateMaterialUseCase;
 import com.postech.oficinamecanica.application.material.GetMaterialUseCase;
 import com.postech.oficinamecanica.application.material.ListMaterialsUseCase;
 import com.postech.oficinamecanica.application.material.ListLowStockMaterialsUseCase;
+import com.postech.oficinamecanica.application.material.StockEntryUseCase;
 import com.postech.oficinamecanica.application.material.UpdateMaterialUseCase;
 import com.postech.oficinamecanica.interfaces.rest.config.ErrorResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,15 +40,17 @@ public class MaterialController {
     private final ChangeMaterialStatusUseCase changeMaterialStatusUseCase;
     private final CreateMaterialUseCase createMaterialUseCase;
     private final UpdateMaterialUseCase updateMaterialUseCase;
+    private final StockEntryUseCase stockEntryUseCase;
     private final MaterialRestMapper mapper;
 
-    public MaterialController(ListMaterialsUseCase listMaterialsUseCase, GetMaterialUseCase getMaterialUseCase, ListLowStockMaterialsUseCase listLowStockUseCase, ChangeMaterialStatusUseCase changeMaterialStatusUseCase, CreateMaterialUseCase createMaterialUseCase, UpdateMaterialUseCase updateMaterialUseCase, MaterialRestMapper mapper) {
+    public MaterialController(ListMaterialsUseCase listMaterialsUseCase, GetMaterialUseCase getMaterialUseCase, ListLowStockMaterialsUseCase listLowStockUseCase, ChangeMaterialStatusUseCase changeMaterialStatusUseCase, CreateMaterialUseCase createMaterialUseCase, UpdateMaterialUseCase updateMaterialUseCase, StockEntryUseCase stockEntryUseCase, MaterialRestMapper mapper) {
         this.listMaterialsUseCase = listMaterialsUseCase;
         this.getMaterialUseCase = getMaterialUseCase;
         this.listLowStockUseCase = listLowStockUseCase;
         this.changeMaterialStatusUseCase = changeMaterialStatusUseCase;
         this.createMaterialUseCase = createMaterialUseCase;
         this.updateMaterialUseCase = updateMaterialUseCase;
+        this.stockEntryUseCase = stockEntryUseCase;
         this.mapper = mapper;
     }
 
@@ -219,5 +222,40 @@ public class MaterialController {
             request.stockMinimum()
         );
         return mapper.toResponse(updated);
+    }
+
+    @PostMapping("/{id}/stock-entry")
+    @Operation(
+        summary = "Entrada de estoque",
+        description = "Registra uma entrada de material no estoque sem vinculação a ordem de serviço. Cria transação do tipo IN."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Entrada de estoque registrada com sucesso",
+            content = @Content(schema = @Schema(implementation = MaterialResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Quantidade inválida (deve ser maior que zero)",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Material não encontrado",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Erro ao registrar transação; entrada de estoque revertida",
+            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+        )
+    })
+    public MaterialResponse stockEntry(
+        @Parameter(description = "ID do Material") @PathVariable Long id,
+        @Valid @RequestBody StockEntryRequest request
+    ) {
+        var transaction = stockEntryUseCase.execute(id, request.quantity());
+        return mapper.toResponse(transaction);
     }
 }
