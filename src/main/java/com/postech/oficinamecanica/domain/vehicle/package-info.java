@@ -1,1 +1,1 @@
-package com.postech.oficinamecanica.domain.veiculo;
+package com.postech.oficinamecanica.domain.vehicle;
