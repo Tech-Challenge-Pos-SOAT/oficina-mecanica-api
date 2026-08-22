@@ -16,7 +16,6 @@ import com.postech.oficinamecanica.domain.employee.EmployeeAlreadyActiveExceptio
 import com.postech.oficinamecanica.domain.employee.EmployeeAlreadyInactiveException;
 import com.postech.oficinamecanica.domain.employee.EmployeeNotFoundException;
 import com.postech.oficinamecanica.domain.employee.InvalidEmployeeRoleException;
-import com.postech.oficinamecanica.domain.material.MaterialNotFoundException;
 import com.postech.oficinamecanica.domain.service.DuplicateServiceNameException;
 import com.postech.oficinamecanica.domain.service.InvalidServicePriceException;
 import com.postech.oficinamecanica.domain.service.ServiceAlreadyActiveException;
