@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -95,5 +96,15 @@ class MaterialTransactionRepositoryImplTest {
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getType()).isEqualTo(TransactionType.OUT);
         assertThat(result.get(0).getServiceOrderId()).isNull();
+    }
+
+    @Test
+    void shouldRejectOutTransactionReferencingUnknownServiceOrder() {
+        MaterialTransactionJpaEntity entity = new MaterialTransactionJpaEntity(
+                null, 1L, 999999L, 5, TransactionType.OUT, Instant.now()
+        );
+
+        assertThatThrownBy(() -> jpaRepository.saveAndFlush(entity))
+                .isInstanceOf(DataIntegrityViolationException.class);
     }
 }

@@ -67,4 +67,20 @@ public class Material {
         this.stockQuantity += quantityToAdd;
         this.updatedAt = Instant.now();
     }
+
+    public void debitStock(Integer quantityToDebit) {
+        if (quantityToDebit == null || quantityToDebit <= 0) {
+            throw new IllegalArgumentException("Quantity to debit must be greater than zero");
+        }
+        if (status != EntityStatus.ACTIVE) {
+            throw new InactiveMaterialException("Cannot debit stock of inactive material " + id);
+        }
+        if (this.stockQuantity < quantityToDebit) {
+            throw new InsufficientStockException(
+                    "Insufficient stock for material " + id
+                            + ": requested " + quantityToDebit + ", available " + this.stockQuantity);
+        }
+        this.stockQuantity -= quantityToDebit;
+        this.updatedAt = Instant.now();
+    }
 }

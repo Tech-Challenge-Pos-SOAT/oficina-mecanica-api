@@ -31,6 +31,15 @@ public class MaterialTransaction {
         this.createdAt = createdAt;
     }
 
+    public static MaterialTransaction in(Long materialId, Integer quantity, Instant createdAt) {
+        return new MaterialTransaction(null, materialId, null, quantity, TransactionType.IN, createdAt);
+    }
+
+    public static MaterialTransaction out(Long materialId, Long serviceOrderId, Integer quantity, Instant createdAt) {
+        if (serviceOrderId == null) throw new IllegalArgumentException("serviceOrderId");
+        return new MaterialTransaction(null, materialId, serviceOrderId, quantity, TransactionType.OUT, createdAt);
+    }
+
     public Long getId() { return id; }
     public Long getMaterialId() { return materialId; }
     public Long getServiceOrderId() { return serviceOrderId; }
