@@ -32,6 +32,17 @@ public class MaterialTransactionRepositoryImpl implements MaterialTransactionRep
     }
 
     @Override
+    public List<MaterialTransaction> findAllByMaterialId(Long materialId, TransactionType type) {
+        List<MaterialTransactionJpaEntity> entities = (type == null)
+                ? jpaRepository.findByMaterialIdOrderByIdAsc(materialId)
+                : jpaRepository.findByMaterialIdAndTypeOrderByIdAsc(materialId, type);
+
+        return entities.stream()
+                .map(mapper::toDomain)
+                .toList();
+    }
+
+    @Override
     public MaterialTransaction save(MaterialTransaction transaction) {
         MaterialTransactionJpaEntity entity = mapper.toPersistence(transaction);
         MaterialTransactionJpaEntity saved = jpaRepository.save(entity);

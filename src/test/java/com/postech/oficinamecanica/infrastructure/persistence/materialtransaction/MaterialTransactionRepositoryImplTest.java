@@ -71,4 +71,29 @@ class MaterialTransactionRepositoryImplTest {
         assertThat(result.get(0).getId()).isLessThan(result.get(1).getId());
         assertThat(result.get(1).getId()).isLessThan(result.get(2).getId());
     }
+
+    @Test
+    void shouldFindOnlyTransactionsOfGivenMaterialOrderedByIdAsc() {
+        jpaRepository.save(new MaterialTransactionJpaEntity(null, 1L, null, 100, TransactionType.IN, Instant.now()));
+        jpaRepository.save(new MaterialTransactionJpaEntity(null, 2L, null, 50, TransactionType.OUT, Instant.now()));
+        jpaRepository.save(new MaterialTransactionJpaEntity(null, 1L, null, 20, TransactionType.OUT, Instant.now()));
+
+        var result = repository.findAllByMaterialId(1L, null);
+
+        assertThat(result).hasSize(2);
+        assertThat(result).allSatisfy(tx -> assertThat(tx.getMaterialId()).isEqualTo(1L));
+        assertThat(result.get(0).getId()).isLessThan(result.get(1).getId());
+    }
+
+    @Test
+    void shouldFindMaterialTransactionsFilteredByType() {
+        jpaRepository.save(new MaterialTransactionJpaEntity(null, 1L, null, 100, TransactionType.IN, Instant.now()));
+        jpaRepository.save(new MaterialTransactionJpaEntity(null, 1L, null, 50, TransactionType.OUT, Instant.now()));
+
+        var result = repository.findAllByMaterialId(1L, TransactionType.OUT);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getType()).isEqualTo(TransactionType.OUT);
+        assertThat(result.get(0).getServiceOrderId()).isNull();
+    }
 }
