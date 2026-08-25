@@ -1,6 +1,8 @@
 package com.postech.oficinamecanica.domain.material;
 
 import com.postech.oficinamecanica.domain.shared.EntityStatus;
+import com.postech.oficinamecanica.domain.shared.exceptions.InvalidParametersException;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 
@@ -9,7 +11,7 @@ public class Material {
     private final String name;
     private final String description;
     private final BigDecimal price;
-    private final Integer stockQuantity;
+    private Integer stockQuantity;
     private final Integer stockMinimum;
     private EntityStatus status;
     private final Instant createdAt;
@@ -18,6 +20,17 @@ public class Material {
     public Material(Long id, String name, String description, BigDecimal price,
                     Integer stockQuantity, Integer stockMinimum, EntityStatus status,
                     Instant createdAt, Instant updatedAt) {
+
+        if (price != null && price.compareTo(BigDecimal.ZERO) < 0) {
+            throw new InvalidParametersException("price", "Price cannot be negative");
+        }
+        if (stockQuantity != null && stockQuantity < 0) {
+            throw new InvalidParametersException("stockQuantity", "Stock quantity cannot be negative");
+        }
+        if (stockMinimum != null && stockMinimum < 0) {
+            throw new InvalidParametersException("stockMinimum", "Stock minimum cannot be negative");
+        }
+
         this.id = id;
         this.name = name;
         this.description = description;
@@ -44,6 +57,30 @@ public class Material {
             throw new IllegalArgumentException("Status cannot be null");
         }
         this.status = newStatus;
+        this.updatedAt = Instant.now();
+    }
+
+    public void addStock(Integer quantityToAdd) {
+        if (quantityToAdd == null || quantityToAdd <= 0) {
+            throw new IllegalArgumentException("Quantity to add must be greater than zero");
+        }
+        this.stockQuantity += quantityToAdd;
+        this.updatedAt = Instant.now();
+    }
+
+    public void debitStock(Integer quantityToDebit) {
+        if (quantityToDebit == null || quantityToDebit <= 0) {
+            throw new IllegalArgumentException("Quantity to debit must be greater than zero");
+        }
+        if (status != EntityStatus.ACTIVE) {
+            throw new InactiveMaterialException("Cannot debit stock of inactive material " + id);
+        }
+        if (this.stockQuantity < quantityToDebit) {
+            throw new InsufficientStockException(
+                    "Insufficient stock for material " + id
+                            + ": requested " + quantityToDebit + ", available " + this.stockQuantity);
+        }
+        this.stockQuantity -= quantityToDebit;
         this.updatedAt = Instant.now();
     }
 }

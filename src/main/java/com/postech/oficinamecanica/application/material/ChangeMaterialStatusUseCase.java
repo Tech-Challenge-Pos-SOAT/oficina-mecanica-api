@@ -2,6 +2,7 @@ package com.postech.oficinamecanica.application.material;
 
 import com.postech.oficinamecanica.domain.material.Material;
 import com.postech.oficinamecanica.domain.shared.EntityStatus;
+import com.postech.oficinamecanica.domain.shared.exceptions.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,7 +17,7 @@ public class ChangeMaterialStatusUseCase {
         EntityStatus newStatus = EntityStatus.valueOf(statusParam.toUpperCase());
 
         Material material = repository.findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("Material not found with id: " + id));
+            .orElseThrow(() -> new ResourceNotFoundException("Material", id));
 
         material.changeStatus(newStatus);
 

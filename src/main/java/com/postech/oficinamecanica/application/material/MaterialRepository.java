@@ -8,6 +8,8 @@ import java.util.Optional;
 public interface MaterialRepository {
     List<Material> findByStatus(EntityStatus status);
     Optional<Material> findById(Long id);
+    Optional<Material> findByIdForUpdate(Long id);
     List<Material> findLowStockByStatus(EntityStatus status);
     Material save(Material material);
+    boolean existsByName(String name);
 }

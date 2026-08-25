@@ -32,6 +32,12 @@ public class MaterialRepositoryImpl implements MaterialRepository {
     }
 
     @Override
+    public Optional<Material> findByIdForUpdate(Long id) {
+        return jpaRepository.findByIdForUpdate(id)
+                .map(mapper::toDomain);
+    }
+
+    @Override
     public List<Material> findLowStockByStatus(EntityStatus status) {
         return jpaRepository.findLowStockByStatusOrderById(status)
             .stream()
@@ -44,5 +50,10 @@ public class MaterialRepositoryImpl implements MaterialRepository {
         MaterialJpaEntity entity = mapper.toPersistence(material);
         MaterialJpaEntity savedEntity = jpaRepository.save(entity);
         return mapper.toDomain(savedEntity);
+    }
+
+    @Override
+    public boolean existsByName(String name) {
+        return jpaRepository.existsByName(name);
     }
 }

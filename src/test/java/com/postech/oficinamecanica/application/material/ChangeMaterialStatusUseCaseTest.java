@@ -2,6 +2,7 @@ package com.postech.oficinamecanica.application.material;
 
 import com.postech.oficinamecanica.domain.material.Material;
 import com.postech.oficinamecanica.domain.shared.EntityStatus;
+import com.postech.oficinamecanica.domain.shared.exceptions.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -43,8 +44,8 @@ class ChangeMaterialStatusUseCaseTest {
         when(repository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> useCase.execute(99L, "INACTIVE"))
-            .isInstanceOf(IllegalArgumentException.class)
-            .hasMessageContaining("Material not found");
+            .isInstanceOf(ResourceNotFoundException.class)
+            .hasMessageContaining("Material com identificador '99' não foi encontrado.");
     }
 
     @Test
