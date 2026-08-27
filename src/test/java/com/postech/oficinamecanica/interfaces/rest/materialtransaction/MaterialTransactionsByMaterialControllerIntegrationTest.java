@@ -1,5 +1,8 @@
 package com.postech.oficinamecanica.interfaces.rest.materialtransaction;
 
+import com.postech.oficinamecanica.application.auth.TokenProvider;
+import com.postech.oficinamecanica.domain.employee.Employee;
+import com.postech.oficinamecanica.domain.employee.EmployeeRole;
 import com.postech.oficinamecanica.domain.materialtransaction.TransactionType;
 import com.postech.oficinamecanica.domain.shared.EntityStatus;
 import com.postech.oficinamecanica.infrastructure.persistence.material.MaterialJpaEntity;
@@ -43,9 +46,11 @@ class MaterialTransactionsByMaterialControllerIntegrationTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private MaterialJpaRepository materialRepository;
     @Autowired private MaterialTransactionJpaRepository transactionRepository;
+    @Autowired private TokenProvider tokenProvider;
 
     private Long materialIdA;
     private Long materialIdB;
+    private String authHeader;
 
     @BeforeEach
     void setUp() {
@@ -53,6 +58,14 @@ class MaterialTransactionsByMaterialControllerIntegrationTest {
         materialRepository.deleteAll();
         materialIdA = materialRepository.save(aMaterial("Oleo 5W30")).getId();
         materialIdB = materialRepository.save(aMaterial("Bateria 60Ah")).getId();
+        authHeader = "Bearer " + tokenProvider.generateToken(anAuthenticatedEmployee());
+    }
+
+    private Employee anAuthenticatedEmployee() {
+        return new Employee(
+                1L, "Test User", "test.user@oficina.com", "hashed-password",
+                EmployeeRole.ATTENDANT, EntityStatus.ACTIVE, Instant.now(), Instant.now()
+        );
     }
 
     @Test
@@ -61,7 +74,7 @@ class MaterialTransactionsByMaterialControllerIntegrationTest {
         saveTransaction(materialIdB, null, 40, TransactionType.OUT);
         saveTransaction(materialIdA, null, 30, TransactionType.OUT);
 
-        mockMvc.perform(get("/api/materials/{id}/transactions", materialIdA))
+        mockMvc.perform(get("/api/materials/{id}/transactions", materialIdA).header("Authorization", authHeader))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].materialId").value(materialIdA.intValue()))
@@ -76,7 +89,7 @@ class MaterialTransactionsByMaterialControllerIntegrationTest {
         saveTransaction(materialIdA, null, 100, TransactionType.IN);
         saveTransaction(materialIdA, null, 40, TransactionType.OUT);
 
-        mockMvc.perform(get("/api/materials/{id}/transactions", materialIdA).param("type", "OUT"))
+        mockMvc.perform(get("/api/materials/{id}/transactions", materialIdA).param("type", "OUT").header("Authorization", authHeader))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].type").value("OUT"))
@@ -85,7 +98,7 @@ class MaterialTransactionsByMaterialControllerIntegrationTest {
 
     @Test
     void shouldReturnEmptyListWhenMaterialHasNoTransactions() throws Exception {
-        mockMvc.perform(get("/api/materials/{id}/transactions", materialIdB))
+        mockMvc.perform(get("/api/materials/{id}/transactions", materialIdB).header("Authorization", authHeader))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
@@ -94,7 +107,7 @@ class MaterialTransactionsByMaterialControllerIntegrationTest {
     void shouldReturnFullContractFields() throws Exception {
         saveTransaction(materialIdA, null, 100, TransactionType.IN);
 
-        mockMvc.perform(get("/api/materials/{id}/transactions", materialIdA))
+        mockMvc.perform(get("/api/materials/{id}/transactions", materialIdA).header("Authorization", authHeader))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").exists())
                 .andExpect(jsonPath("$[0].materialId").value(materialIdA.intValue()))
@@ -106,14 +119,14 @@ class MaterialTransactionsByMaterialControllerIntegrationTest {
 
     @Test
     void shouldReturn404WhenMaterialDoesNotExist() throws Exception {
-        mockMvc.perform(get("/api/materials/{id}/transactions", 9999L))
+        mockMvc.perform(get("/api/materials/{id}/transactions", 9999L).header("Authorization", authHeader))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"));
     }
 
     @Test
     void shouldReturn400WhenTypeIsInvalid() throws Exception {
-        mockMvc.perform(get("/api/materials/{id}/transactions", materialIdA).param("type", "INVALID"))
+        mockMvc.perform(get("/api/materials/{id}/transactions", materialIdA).param("type", "INVALID").header("Authorization", authHeader))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_PARAMETER_TYPE"));
     }

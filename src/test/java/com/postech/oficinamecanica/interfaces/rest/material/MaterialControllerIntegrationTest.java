@@ -1,5 +1,8 @@
 package com.postech.oficinamecanica.interfaces.rest.material;
 
+import com.postech.oficinamecanica.application.auth.TokenProvider;
+import com.postech.oficinamecanica.domain.employee.Employee;
+import com.postech.oficinamecanica.domain.employee.EmployeeRole;
 import com.postech.oficinamecanica.domain.materialtransaction.TransactionType;
 import com.postech.oficinamecanica.domain.shared.EntityStatus;
 import com.postech.oficinamecanica.infrastructure.persistence.material.MaterialJpaEntity;
@@ -53,10 +56,23 @@ class MaterialControllerIntegrationTest {
     @Autowired
     private MaterialTransactionJpaRepository transactionRepository;
 
+    @Autowired
+    private TokenProvider tokenProvider;
+
+    private String authHeader;
+
     @BeforeEach
     void setUp() {
         transactionRepository.deleteAll();
         repository.deleteAll();
+        authHeader = "Bearer " + tokenProvider.generateToken(anAuthenticatedEmployee());
+    }
+
+    private Employee anAuthenticatedEmployee() {
+        return new Employee(
+                1L, "Test User", "test.user@oficina.com", "hashed-password",
+                EmployeeRole.ATTENDANT, EntityStatus.ACTIVE, Instant.now(), Instant.now()
+        );
     }
 
     @Test
@@ -65,7 +81,7 @@ class MaterialControllerIntegrationTest {
         repository.save(aMaterial("Bateria", EntityStatus.INACTIVE));
         repository.save(aMaterial("Filtro", EntityStatus.ACTIVE));
 
-        mockMvc.perform(get("/api/materials"))
+        mockMvc.perform(get("/api/materials").header("Authorization", authHeader))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[*].status", containsInAnyOrder("ACTIVE", "ACTIVE")));
@@ -75,7 +91,7 @@ class MaterialControllerIntegrationTest {
     void shouldReturnMaterialWhenFetchedById() throws Exception {
         var saved = repository.save(aMaterial("Óleo Motor 5W30 Sintético", EntityStatus.ACTIVE));
 
-        mockMvc.perform(get("/api/materials/{id}", saved.getId())) // Uso dinâmico do ID
+        mockMvc.perform(get("/api/materials/{id}", saved.getId()).header("Authorization", authHeader)) // Uso dinâmico do ID
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(saved.getId().intValue()))
                 .andExpect(jsonPath("$.name").value("Óleo Motor 5W30 Sintético"))
@@ -84,7 +100,7 @@ class MaterialControllerIntegrationTest {
 
     @Test
     void shouldReturnNotFoundWhenFetchedWithNonExistentId() throws Exception {
-        mockMvc.perform(get("/api/materials/{id}", 9999L)) // Seguro, pois o banco foi limpo no setup
+        mockMvc.perform(get("/api/materials/{id}", 9999L).header("Authorization", authHeader)) // Seguro, pois o banco foi limpo no setup
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"));
     }
@@ -94,6 +110,7 @@ class MaterialControllerIntegrationTest {
         var saved = repository.save(aMaterial("Correia", EntityStatus.ACTIVE));
 
         mockMvc.perform(patch("/api/materials/{id}/status", saved.getId())
+                        .header("Authorization", authHeader)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\": \"INACTIVE\"}"))
                 .andExpect(status().isOk())
@@ -114,6 +131,7 @@ class MaterialControllerIntegrationTest {
             """;
 
         mockMvc.perform(post("/api/materials")
+                        .header("Authorization", authHeader)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isCreated())
@@ -136,6 +154,7 @@ class MaterialControllerIntegrationTest {
             """;
 
         mockMvc.perform(post("/api/materials")
+                        .header("Authorization", authHeader)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isBadRequest());
@@ -147,7 +166,7 @@ class MaterialControllerIntegrationTest {
         var m2 = repository.save(aMaterial("Amortecedor", EntityStatus.ACTIVE));
         var m3 = repository.save(aMaterial("Bateria", EntityStatus.ACTIVE));
 
-        mockMvc.perform(get("/api/materials").param("status", "ACTIVE"))
+        mockMvc.perform(get("/api/materials").param("status", "ACTIVE").header("Authorization", authHeader))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(m1.getId().intValue()))
                 .andExpect(jsonPath("$[1].id").value(m2.getId().intValue()))
@@ -158,7 +177,7 @@ class MaterialControllerIntegrationTest {
     void shouldReturnEveryContractFieldForFirstMaterial() throws Exception {
         var saved = repository.save(aMaterial("Óleo Motor 5W30 Sintético", EntityStatus.ACTIVE));
 
-        mockMvc.perform(get("/api/materials"))
+        mockMvc.perform(get("/api/materials").header("Authorization", authHeader))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(saved.getId().intValue()))
                 .andExpect(jsonPath("$[0].name").value("Óleo Motor 5W30 Sintético"))
@@ -177,7 +196,7 @@ class MaterialControllerIntegrationTest {
         material.setDescription(null);
         repository.save(material);
 
-        mockMvc.perform(get("/api/materials"))
+        mockMvc.perform(get("/api/materials").header("Authorization", authHeader))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].name").value("Correia Dentada"))
                 .andExpect(jsonPath("$[0].description").isEmpty());
@@ -188,7 +207,7 @@ class MaterialControllerIntegrationTest {
         repository.save(aMaterial("Óleo", EntityStatus.ACTIVE));
         var inactive = repository.save(aMaterial("Bateria 60Ah", EntityStatus.INACTIVE));
 
-        mockMvc.perform(get("/api/materials").param("status", "INACTIVE"))
+        mockMvc.perform(get("/api/materials").param("status", "INACTIVE").header("Authorization", authHeader))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].id").value(inactive.getId().intValue()))
@@ -199,7 +218,7 @@ class MaterialControllerIntegrationTest {
     void shouldAcceptLowercaseStatusFilter() throws Exception {
         var inactive = repository.save(aMaterial("Bateria 60Ah", EntityStatus.INACTIVE));
 
-        mockMvc.perform(get("/api/materials").param("status", "inactive"))
+        mockMvc.perform(get("/api/materials").param("status", "inactive").header("Authorization", authHeader))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].id").value(inactive.getId().intValue()));
@@ -207,7 +226,7 @@ class MaterialControllerIntegrationTest {
 
     @Test
     void shouldReturnBadRequestWhenStatusIsUnknown() throws Exception {
-        mockMvc.perform(get("/api/materials").param("status", "ARCHIVED"))
+        mockMvc.perform(get("/api/materials").param("status", "ARCHIVED").header("Authorization", authHeader))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_STATUS"));
     }
@@ -224,7 +243,7 @@ class MaterialControllerIntegrationTest {
         normalStock.setStockMinimum(5);
         repository.save(normalStock); // Não deve retornar na query
 
-        mockMvc.perform(get("/api/materials/low-stock"))
+        mockMvc.perform(get("/api/materials/low-stock").header("Authorization", authHeader))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].id").value(savedLow.getId().intValue()))
@@ -236,6 +255,7 @@ class MaterialControllerIntegrationTest {
         var saved = repository.save(aMaterial("Pneu", EntityStatus.ACTIVE));
 
         mockMvc.perform(patch("/api/materials/{id}/status", saved.getId())
+                        .header("Authorization", authHeader)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"status\": \"INVALID_STATUS\"}"))
                 .andExpect(status().isBadRequest());
@@ -253,6 +273,7 @@ class MaterialControllerIntegrationTest {
             """;
 
         mockMvc.perform(post("/api/materials")
+                        .header("Authorization", authHeader)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isBadRequest());
@@ -273,6 +294,7 @@ class MaterialControllerIntegrationTest {
             """;
 
         mockMvc.perform(put("/api/materials/{id}", saved.getId())
+                        .header("Authorization", authHeader)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isOk())
@@ -297,6 +319,7 @@ class MaterialControllerIntegrationTest {
             """;
 
         mockMvc.perform(put("/api/materials/{id}", saved.getId())
+                        .header("Authorization", authHeader)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isOk())
@@ -319,6 +342,7 @@ class MaterialControllerIntegrationTest {
             """;
 
         mockMvc.perform(put("/api/materials/{id}", targetToUpdate.getId())
+                        .header("Authorization", authHeader)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isBadRequest());
@@ -338,6 +362,7 @@ class MaterialControllerIntegrationTest {
             """;
 
         mockMvc.perform(put("/api/materials/{id}", saved.getId())
+                        .header("Authorization", authHeader)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isBadRequest());
@@ -355,6 +380,7 @@ class MaterialControllerIntegrationTest {
             """;
 
         mockMvc.perform(put("/api/materials/9999")
+                        .header("Authorization", authHeader)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(payload))
                 .andExpect(status().isNotFound());
@@ -365,6 +391,7 @@ class MaterialControllerIntegrationTest {
         var saved = repository.save(aMaterial("Óleo 5W30", EntityStatus.ACTIVE));
 
         mockMvc.perform(post("/api/materials/{id}/stock-entry", saved.getId())
+                        .header("Authorization", authHeader)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quantity\": 10}"))
                 .andExpect(status().isOk())
@@ -384,6 +411,7 @@ class MaterialControllerIntegrationTest {
     @Test
     void shouldReturnNotFoundWhenStockEntryForNonExistentMaterial() throws Exception {
         mockMvc.perform(post("/api/materials/{id}/stock-entry", 9999)
+                        .header("Authorization", authHeader)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quantity\": 10}"))
                 .andExpect(status().isNotFound())
@@ -395,6 +423,7 @@ class MaterialControllerIntegrationTest {
         var saved = repository.save(aMaterial("Filtro", EntityStatus.ACTIVE));
 
         mockMvc.perform(post("/api/materials/{id}/stock-entry", saved.getId())
+                        .header("Authorization", authHeader)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quantity\": 0}"))
                 .andExpect(status().isBadRequest());
@@ -407,6 +436,7 @@ class MaterialControllerIntegrationTest {
         var saved = repository.save(aMaterial("Filtro", EntityStatus.ACTIVE));
 
         mockMvc.perform(post("/api/materials/{id}/stock-entry", saved.getId())
+                        .header("Authorization", authHeader)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"quantity\": -5}"))
                 .andExpect(status().isBadRequest());

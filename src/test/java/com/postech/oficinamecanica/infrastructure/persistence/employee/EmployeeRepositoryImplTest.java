@@ -33,7 +33,7 @@ class EmployeeRepositoryImplTest {
 
     @Test
     void shouldPersistAndFindEmployeeById() {
-        Employee saved = repository.save(anEmployee("Carlos Souza", "carlos.souza@oficina.com"));
+        Employee saved = repository.save(anEmployee("Julia Ramos", "julia.ramos@oficina.com"));
 
         assertThat(repository.findById(saved.getId())).isPresent();
     }
@@ -59,8 +59,8 @@ class EmployeeRepositoryImplTest {
 
     private static Employee anEmployee(String name, String email) {
         return new Employee(
-            null, name, email, "hashed-password", EmployeeRole.MECHANIC,
-            EntityStatus.ACTIVE, Instant.now(), Instant.now()
+                null, name, email, "hashed-password", EmployeeRole.MECHANIC,
+                EntityStatus.ACTIVE, Instant.now(), Instant.now()
         );
     }
 }
