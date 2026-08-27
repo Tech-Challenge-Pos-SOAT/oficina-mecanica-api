@@ -1,5 +1,8 @@
 package com.postech.oficinamecanica.interfaces.rest.materialtransaction;
 
+import com.postech.oficinamecanica.application.auth.TokenProvider;
+import com.postech.oficinamecanica.domain.employee.Employee;
+import com.postech.oficinamecanica.domain.employee.EmployeeRole;
 import com.postech.oficinamecanica.domain.materialtransaction.TransactionType;
 import com.postech.oficinamecanica.domain.shared.EntityStatus;
 import com.postech.oficinamecanica.infrastructure.persistence.material.MaterialJpaEntity;
@@ -34,10 +37,12 @@ class MaterialTransactionControllerIntegrationTest {
     @Autowired private MockMvc mockMvc;
     @Autowired private MaterialTransactionJpaRepository jpaRepository;
     @Autowired private MaterialJpaRepository materialRepository;
+    @Autowired private TokenProvider tokenProvider;
 
     private Long materialId1;
     private Long materialId2;
     private Long materialId3;
+    private String authHeader;
 
     @BeforeEach
     void setUp() {
@@ -52,6 +57,14 @@ class MaterialTransactionControllerIntegrationTest {
         materialId3 = materialRepository.save(new MaterialJpaEntity(
             null, "Material 3", "Desc 3", BigDecimal.TEN, 100, 10, EntityStatus.ACTIVE, Instant.now(), Instant.now()
         )).getId();
+        authHeader = "Bearer " + tokenProvider.generateToken(anAuthenticatedEmployee());
+    }
+
+    private Employee anAuthenticatedEmployee() {
+        return new Employee(
+                1L, "Test User", "test.user@oficina.com", "hashed-password",
+                EmployeeRole.ATTENDANT, EntityStatus.ACTIVE, Instant.now(), Instant.now()
+        );
     }
 
     @Test
@@ -63,7 +76,7 @@ class MaterialTransactionControllerIntegrationTest {
             null, materialId2, null, 50, TransactionType.OUT, Instant.now()
         ));
 
-        mockMvc.perform(get("/api/material-transactions"))
+        mockMvc.perform(get("/api/material-transactions").header("Authorization", authHeader))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.length()").value(2))
             .andExpect(jsonPath("$[0].materialId").value(materialId1))
@@ -79,7 +92,7 @@ class MaterialTransactionControllerIntegrationTest {
             null, materialId2, null, 50, TransactionType.OUT, Instant.now()
         ));
 
-        mockMvc.perform(get("/api/material-transactions?type=OUT"))
+        mockMvc.perform(get("/api/material-transactions?type=OUT").header("Authorization", authHeader))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.length()").value(1))
             .andExpect(jsonPath("$[0].type").value("OUT"));
@@ -97,7 +110,7 @@ class MaterialTransactionControllerIntegrationTest {
             null, materialId2, null, 50, TransactionType.OUT, Instant.now()
         ));
 
-        mockMvc.perform(get("/api/material-transactions"))
+        mockMvc.perform(get("/api/material-transactions").header("Authorization", authHeader))
             .andExpect(status().isOk())
             .andExpect(jsonPath("$[0].id").value(1))
             .andExpect(jsonPath("$[1].id").value(2))
@@ -106,7 +119,7 @@ class MaterialTransactionControllerIntegrationTest {
 
     @Test
     void shouldReturnBadRequestOnInvalidType() throws Exception {
-        mockMvc.perform(get("/api/material-transactions?type=INVALID"))
+        mockMvc.perform(get("/api/material-transactions?type=INVALID").header("Authorization", authHeader))
             .andExpect(status().isBadRequest());
     }
 }

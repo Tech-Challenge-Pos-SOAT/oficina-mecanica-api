@@ -194,6 +194,4 @@ Guia completo (memoria minima, troubleshooting por SO/runtime, comandos
   Trello): ver `docs/context/`.
 
 ## Grupo
-
-- Nome do grupo: _preencher_
-- Participantes e usernames no Discord: _preencher_
+- Participantes e usernames no Discord: William Bacelar, João Araújo, Alyson Guimarães, Beatriz e Kawan
