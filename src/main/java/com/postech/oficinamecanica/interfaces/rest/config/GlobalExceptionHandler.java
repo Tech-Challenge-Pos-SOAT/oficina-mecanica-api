@@ -1,5 +1,6 @@
 package com.postech.oficinamecanica.interfaces.rest.config;
 
+import com.postech.oficinamecanica.domain.auth.InvalidCredentialsException;
 import com.postech.oficinamecanica.domain.shared.exceptions.BusinessRuleViolationException;
 import com.postech.oficinamecanica.domain.shared.exceptions.InvalidParametersException;
 import com.postech.oficinamecanica.domain.shared.exceptions.ResourceNotFoundException;
@@ -32,6 +33,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import com.postech.oficinamecanica.interfaces.rest.auth.AuthErrorResponse;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.util.Arrays;
@@ -52,6 +54,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ErrorResponse> handleInvalidStatus(IllegalArgumentException e) {
         return respond("INVALID_STATUS", "Status deve ser ACTIVE ou INACTIVE", HttpStatus.BAD_REQUEST);
+    }
+
+    // ---- Auth ----
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<AuthErrorResponse> handle(InvalidCredentialsException e) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new AuthErrorResponse("Credenciais inválidas"));
     }
 
     // ---- Customer ----
