@@ -81,6 +81,14 @@ Enums que saem do schema: `ServiceOrderStatus`, `EntityStatus` (ACTIVE/INACTIVE)
 - `author_type` VARCHAR(20): CUSTOMER / EMPLOYEE / SYSTEM.
 - `author_id` BIGINT: nulo se author_type = SYSTEM.
 
+### ServiceOrder — ajustes da V7
+
+A OS nasce sem orcamento, entao o V7 (`V7__service_order_flow.sql`) mexeu em tres pontos do schema original:
+
+- `service_order_history.price` deixou de ser NOT NULL: o primeiro registro (status `RECEIVED`) nao tem valor ainda.
+- `service_order_history.observation` VARCHAR(500): motivo do encerramento (recusa do cliente, impossibilidade de execucao) que a linguagem ubiqua ja previa e o V1 nao criou.
+- `service_order_material.stock_debited` BOOLEAN NOT NULL DEFAULT FALSE: marca o item cuja baixa ja aconteceu. Sem isso, reparo adicional (que volta a OS para `AWAITING_APPROVAL`) daria baixa duas vezes nos materiais da primeira aprovacao.
+
 ### MaterialTransaction
 - `type` VARCHAR(10): IN (entrada de estoque) ou OUT (saída por aprovação de OS).
 - `service_order_id` BIGINT FK: nulo em entradas (compra de fornecedor); obrigatório em saídas.

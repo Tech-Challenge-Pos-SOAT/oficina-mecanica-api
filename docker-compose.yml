@@ -26,6 +26,16 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/oficina_mecanica
       SPRING_DATASOURCE_USERNAME: oficina
       SPRING_DATASOURCE_PASSWORD: oficina
+      # A aplicacao escuta 8084 por padrao (application.yml); dentro do
+      # container alinhamos com a porta publicada aqui e com o EXPOSE do
+      # Dockerfile, senao "docker compose up" sobe e nada responde em 8080.
+      SERVER_PORT: 8080
+      # O modulo spring-boot-docker-compose so faz sentido rodando na maquina
+      # do dev: dentro do container nao existe docker-compose.yml nem socket
+      # do Docker. Os testes de integracao ja desligam isso do mesmo jeito.
+      DOCKER_COMPOSE_ENABLED: "false"
+      # Segredo de assinatura do JWT. Trocar por um valor real fora de dev.
+      JWT_SECRET: ${JWT_SECRET:-dev-only-oficina-mecanica-api-jwt-signing-secret-troque-em-producao-32bytes}
     ports:
       - "8080:8080"
 

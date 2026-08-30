@@ -1,6 +1,17 @@
 package com.postech.oficinamecanica.interfaces.rest.config;
 
 import com.postech.oficinamecanica.domain.auth.InvalidCredentialsException;
+import com.postech.oficinamecanica.domain.serviceorder.InvalidServiceOrderStatusException;
+import com.postech.oficinamecanica.domain.serviceorder.InvalidServiceOrderTransitionException;
+import com.postech.oficinamecanica.domain.serviceorder.ServiceOrderAccessDeniedException;
+import com.postech.oficinamecanica.domain.serviceorder.ServiceOrderNotFoundException;
+import com.postech.oficinamecanica.domain.serviceorder.ServiceOrderNotOpenForItemsException;
+import com.postech.oficinamecanica.domain.serviceorder.VehicleNotOwnedByCustomerException;
+import jakarta.validation.ConstraintViolationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.servlet.NoHandlerFoundException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import com.postech.oficinamecanica.domain.shared.exceptions.BusinessRuleViolationException;
 import com.postech.oficinamecanica.domain.shared.exceptions.InvalidParametersException;
 import com.postech.oficinamecanica.domain.shared.exceptions.ResourceNotFoundException;
@@ -41,6 +52,8 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ErrorResponse> handle(MethodArgumentNotValidException e) {
@@ -173,6 +186,45 @@ public class GlobalExceptionHandler {
         return respond("CUSTOMER_NOT_ACTIVE", e.getMessage(), HttpStatus.CONFLICT);
     }
   
+    // ---- Service Order ----
+
+    @ExceptionHandler(ServiceOrderNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handle(ServiceOrderNotFoundException e) {
+        return respond("SERVICE_ORDER_NOT_FOUND", e.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(InvalidServiceOrderTransitionException.class)
+    public ResponseEntity<ErrorResponse> handle(InvalidServiceOrderTransitionException e) {
+        return respond("INVALID_STATUS_TRANSITION", e.getMessage(), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(ServiceOrderNotOpenForItemsException.class)
+    public ResponseEntity<ErrorResponse> handle(ServiceOrderNotOpenForItemsException e) {
+        return respond("SERVICE_ORDER_NOT_OPEN_FOR_ITEMS", e.getMessage(), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(ServiceOrderAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handle(ServiceOrderAccessDeniedException e) {
+        return respond("SERVICE_ORDER_ACCESS_DENIED", e.getMessage(), HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(VehicleNotOwnedByCustomerException.class)
+    public ResponseEntity<ErrorResponse> handle(VehicleNotOwnedByCustomerException e) {
+        return respond("VEHICLE_NOT_OWNED_BY_CUSTOMER", e.getMessage(), HttpStatus.CONFLICT);
+    }
+
+    @ExceptionHandler(InvalidServiceOrderStatusException.class)
+    public ResponseEntity<ErrorResponse> handle(InvalidServiceOrderStatusException e) {
+        return respond("INVALID_SERVICE_ORDER_STATUS", e.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
+    // Parametros de query anotados em controller @Validated (ex.: ?document= vazio)
+    // caem aqui; sem isso virariam 500 no handler generico.
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handle(ConstraintViolationException e) {
+        return respond("VALIDATION_ERROR", e.getMessage(), HttpStatus.BAD_REQUEST);
+    }
+
     // ---- Generic Exceptions ----  
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleResourceNotFound(ResourceNotFoundException e) {
@@ -233,8 +285,18 @@ public class GlobalExceptionHandler {
     }
 
 
+    // Rota inexistente cai aqui antes do tratamento padrao do Spring, porque
+    // ExceptionHandlerExceptionResolver roda antes do DefaultHandlerExceptionResolver.
+    // Sem estes dois handlers, qualquer URL errada em /api/* responde 500 em vez de 404.
+    @ExceptionHandler({NoResourceFoundException.class, NoHandlerFoundException.class})
+    public ResponseEntity<ErrorResponse> handleNotFound(Exception e) {
+        return respond("ENDPOINT_NOT_FOUND", "Rota nao encontrada", HttpStatus.NOT_FOUND);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception e) {
+        // Sem este log um erro inesperado vira 500 mudo, sem rastro nenhum.
+        log.error("Erro nao tratado", e);
         return respond("INTERNAL_ERROR", "Erro interno do servidor", HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
