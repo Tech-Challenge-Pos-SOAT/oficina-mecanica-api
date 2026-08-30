@@ -1,0 +1,920 @@
+{
+  "_type": "export",
+  "__export_format": 4,
+  "__export_date": "2026-08-30T01:29:37.000Z",
+  "__export_source": "oficina-mecanica-api",
+  "resources": [
+    {
+      "_id": "wrk_oficina_mecanica",
+      "_type": "workspace",
+      "parentId": null,
+      "name": "Oficina Mecanica API - Fluxo da OS",
+      "description": "18 chamadas na ordem de execucao, do login a entrega do veiculo. As pastas seguem o runbook: autenticacao, pre-requisitos, fluxo interno, acompanhamento do cliente (sem token), conferencia da baixa de estoque, encerramento e cenarios de erro.",
+      "scope": "collection"
+    },
+    {
+      "_id": "env_base",
+      "_type": "environment",
+      "parentId": "wrk_oficina_mecanica",
+      "name": "Base Environment",
+      "isPrivate": false,
+      "metaSortKey": 1,
+      "dataPropertyOrder": null,
+      "data": {
+        "baseUrl": "http://localhost:8080",
+        "employeeEmail": "carlos.souza@oficina.com",
+        "employeePassword": "senha123",
+        "token": "COLE_O_TOKEN_DO_PASSO_01",
+        "document": "529.982.247-25",
+        "otherDocument": "111.444.777-35",
+        "plate": "XYZ-9876",
+        "employeeId": 1,
+        "customerId": 2,
+        "serviceId": 1,
+        "materialId": 1,
+        "orderId": 1
+      }
+    },
+    {
+      "_id": "env_local",
+      "_type": "environment",
+      "parentId": "env_base",
+      "name": "Local (mvn spring-boot:run)",
+      "isPrivate": false,
+      "metaSortKey": 2,
+      "dataPropertyOrder": null,
+      "data": {
+        "baseUrl": "http://localhost:8084"
+      }
+    },
+    {
+      "_id": "fld_1",
+      "_type": "request_group",
+      "parentId": "wrk_oficina_mecanica",
+      "name": "1. Autenticacao",
+      "description": "Rota publica. Copie o token da resposta para a variavel de ambiente 'token'.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -1000
+    },
+    {
+      "_id": "req_01",
+      "_type": "request",
+      "parentId": "fld_1",
+      "name": "01 · POST /auth/login",
+      "description": "Funcionario semeado pela migration V6. Esperado 200 com token, employeeId e role.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/auth/login",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -2000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"email\": \"{{ _.employeeEmail }}\",\n  \"password\": \"{{ _.employeePassword }}\"\n}"
+      },
+      "authentication": {}
+    },
+    {
+      "_id": "fld_2",
+      "_type": "request_group",
+      "parentId": "wrk_oficina_mecanica",
+      "name": "2. Pre-requisitos",
+      "description": "So na primeira execucao, com o banco recem-criado.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -3000
+    },
+    {
+      "_id": "req_02",
+      "_type": "request",
+      "parentId": "fld_2",
+      "name": "02 · GET /api/customers/document",
+      "description": "Confirma a cliente Maria Oliveira (seed V2) e o id que o veiculo vai usar. Esperado id 2.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/customers/document?document={{ _.document }}",
+      "headers": [],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -4000,
+      "body": {},
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "req_03",
+      "_type": "request",
+      "parentId": "fld_2",
+      "name": "03 · POST /api/vehicles",
+      "description": "A OS e aberta pela placa; o veiculo precisa pertencer a essa cliente. Esperado 201.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/vehicles",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -5000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"customerId\": \"{{ _.customerId }}\",\n  \"brand\": \"Fiat\",\n  \"model\": \"Uno\",\n  \"plate\": \"{{ _.plate }}\",\n  \"year\": 2019\n}"
+      },
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "req_04",
+      "_type": "request",
+      "parentId": "fld_2",
+      "name": "04 · POST /api/services",
+      "description": "Servico de catalogo. Anote o id em 'serviceId'. Esperado 201.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/services",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -6000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Troca de oleo\",\n  \"description\": \"Motor flex, ate 4 litros\",\n  \"price\": 150.0\n}"
+      },
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "req_05",
+      "_type": "request",
+      "parentId": "fld_2",
+      "name": "05 · GET /api/materials",
+      "description": "Use o material id 1 do seed: Oleo Motor 5W30, 189.90, estoque 40. Anote o estoque.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/materials",
+      "headers": [],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -7000,
+      "body": {},
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "req_05b",
+      "_type": "request",
+      "parentId": "fld_2",
+      "name": "05b · POST /api/materials (opcional)",
+      "description": "So se quiser um material proprio em vez do seed.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/materials",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -8000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"name\": \"Oleo 5W30 sintetico (teste)\",\n  \"description\": \"Galao 4 litros\",\n  \"price\": 30.0,\n  \"stockQuantity\": 10,\n  \"stockMinimum\": 2\n}"
+      },
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "req_05c",
+      "_type": "request",
+      "parentId": "fld_2",
+      "name": "05c · POST /api/materials/{id}/stock-entry (opcional)",
+      "description": "Entrada de estoque: gera transacao IN, sem vinculo com OS.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/materials/{{ _.materialId }}/stock-entry",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -9000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"quantity\": 20\n}"
+      },
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "fld_3",
+      "_type": "request_group",
+      "parentId": "wrk_oficina_mecanica",
+      "name": "3. Fluxo interno da oficina",
+      "description": "Todas exigem Bearer token. Execute na ordem.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -10000
+    },
+    {
+      "_id": "req_06",
+      "_type": "request",
+      "parentId": "fld_3",
+      "name": "06 · POST /api/service-orders (abertura)",
+      "description": "Identifica cliente por CPF/CNPJ e veiculo pela placa. Esperado 201, RECEIVED, price nulo. Anote o id em 'orderId'.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/service-orders",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -11000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"customerDocument\": \"{{ _.document }}\",\n  \"plate\": \"{{ _.plate }}\",\n  \"employeeId\": \"{{ _.employeeId }}\"\n}"
+      },
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "req_07",
+      "_type": "request",
+      "parentId": "fld_3",
+      "name": "07 · POST /{orderId}/diagnosis",
+      "description": "RECEIVED -> IN_DIAGNOSIS.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/service-orders/{{ _.orderId }}/diagnosis",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -12000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"employeeId\": \"{{ _.employeeId }}\"\n}"
+      },
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "req_08",
+      "_type": "request",
+      "parentId": "fld_3",
+      "name": "08 · POST /{orderId}/services",
+      "description": "Copia o preco do catalogo. Esperado price 150.00.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/service-orders/{{ _.orderId }}/services",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -13000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"serviceId\": \"{{ _.serviceId }}\",\n  \"employeeId\": \"{{ _.employeeId }}\"\n}"
+      },
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "req_09",
+      "_type": "request",
+      "parentId": "fld_3",
+      "name": "09 · POST /{orderId}/materials",
+      "description": "Nao mexe no estoque ainda. Esperado price 529.80 (150 + 2 x 189.90).",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/service-orders/{{ _.orderId }}/materials",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -14000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"materialId\": \"{{ _.materialId }}\",\n  \"quantity\": 2,\n  \"employeeId\": \"{{ _.employeeId }}\"\n}"
+      },
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "req_10",
+      "_type": "request",
+      "parentId": "fld_3",
+      "name": "10 · POST /{orderId}/budget (envia ao cliente)",
+      "description": "-> AWAITING_APPROVAL. A ordem para de aceitar itens novos.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/service-orders/{{ _.orderId }}/budget",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -15000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"employeeId\": \"{{ _.employeeId }}\"\n}"
+      },
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "fld_4",
+      "_type": "request_group",
+      "parentId": "wrk_oficina_mecanica",
+      "name": "4. Acompanhamento do cliente (SEM token)",
+      "description": "Consulta e decisao do cliente. Nenhuma requisicao daqui manda Authorization.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -16000
+    },
+    {
+      "_id": "req_11",
+      "_type": "request",
+      "parentId": "fld_4",
+      "name": "11 · GET /public/service-orders?document=",
+      "description": "Lista as ordens do cliente. Esperado 1 item, AWAITING_APPROVAL, price 529.80.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/public/service-orders?document={{ _.document }}",
+      "headers": [],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -17000,
+      "body": {},
+      "authentication": {}
+    },
+    {
+      "_id": "req_12",
+      "_type": "request",
+      "parentId": "fld_4",
+      "name": "12 · GET /public/service-orders/{orderId}",
+      "description": "Detalhe com itens, orcamento e historico.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/public/service-orders/{{ _.orderId }}?document={{ _.document }}",
+      "headers": [],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -18000,
+      "body": {},
+      "authentication": {}
+    },
+    {
+      "_id": "req_13",
+      "_type": "request",
+      "parentId": "fld_4",
+      "name": "13 · POST /{orderId}/approval (aprovar)",
+      "description": "-> IN_EXECUTION e baixa atomica do estoque. Autor CUSTOMER no historico.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/public/service-orders/{{ _.orderId }}/approval",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -19000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"customerDocument\": \"{{ _.document }}\",\n  \"approved\": true\n}"
+      },
+      "authentication": {}
+    },
+    {
+      "_id": "req_13b",
+      "_type": "request",
+      "parentId": "fld_4",
+      "name": "13b · POST /{orderId}/approval (recusar) - caminho alternativo",
+      "description": "-> FINISHED sem consumir estoque, com o motivo no historico. Use numa OS separada, nao na mesma do passo 13.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/public/service-orders/{{ _.orderId }}/approval",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -20000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"customerDocument\": \"{{ _.document }}\",\n  \"approved\": false,\n  \"reason\": \"Preco acima do esperado\"\n}"
+      },
+      "authentication": {}
+    },
+    {
+      "_id": "fld_5",
+      "_type": "request_group",
+      "parentId": "wrk_oficina_mecanica",
+      "name": "5. Conferencia da baixa de estoque",
+      "description": "Volta a exigir token.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -21000
+    },
+    {
+      "_id": "req_14",
+      "_type": "request",
+      "parentId": "fld_5",
+      "name": "14 · GET /api/materials/{materialId}",
+      "description": "stockQuantity deve ter caido de 40 para 38.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/materials/{{ _.materialId }}",
+      "headers": [],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -22000,
+      "body": {},
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "req_15",
+      "_type": "request",
+      "parentId": "fld_5",
+      "name": "15 · GET /api/materials/{materialId}/transactions",
+      "description": "1 transacao OUT, quantity 2, com serviceOrderId preenchido.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/materials/{{ _.materialId }}/transactions",
+      "headers": [],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -23000,
+      "body": {},
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "fld_6",
+      "_type": "request_group",
+      "parentId": "wrk_oficina_mecanica",
+      "name": "6. Encerramento",
+      "description": "Com token.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -24000
+    },
+    {
+      "_id": "req_16",
+      "_type": "request",
+      "parentId": "fld_6",
+      "name": "16 · POST /{orderId}/completion",
+      "description": "IN_EXECUTION -> FINISHED. A observacao vai para o historico.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/service-orders/{{ _.orderId }}/completion",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -25000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"employeeId\": \"{{ _.employeeId }}\",\n  \"observation\": \"Servicos concluidos e testados\"\n}"
+      },
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "req_17",
+      "_type": "request",
+      "parentId": "fld_6",
+      "name": "17 · POST /{orderId}/delivery",
+      "description": "FINISHED -> DELIVERED.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/service-orders/{{ _.orderId }}/delivery",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -26000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"employeeId\": \"{{ _.employeeId }}\"\n}"
+      },
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "req_18",
+      "_type": "request",
+      "parentId": "fld_6",
+      "name": "18 · GET /api/service-orders/{orderId}",
+      "description": "Historico com 6 entradas: RECEIVED, IN_DIAGNOSIS, AWAITING_APPROVAL, IN_EXECUTION, FINISHED, DELIVERED.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/service-orders/{{ _.orderId }}",
+      "headers": [],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -27000,
+      "body": {},
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "fld_7",
+      "_type": "request_group",
+      "parentId": "wrk_oficina_mecanica",
+      "name": "7. Cenarios de erro",
+      "description": "Rode depois do caminho feliz, com a OS ja entregue.",
+      "environment": {},
+      "environmentPropertyOrder": null,
+      "metaSortKey": -28000
+    },
+    {
+      "_id": "req_e1",
+      "_type": "request",
+      "parentId": "fld_7",
+      "name": "401 · GET /api/service-orders sem token",
+      "description": "Prova que o filtro JWT cobre /api/*.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/service-orders",
+      "headers": [],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -29000,
+      "body": {},
+      "authentication": {}
+    },
+    {
+      "_id": "req_e2",
+      "_type": "request",
+      "parentId": "fld_7",
+      "name": "403 · aprovar com documento de outro cliente",
+      "description": "SERVICE_ORDER_ACCESS_DENIED.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/public/service-orders/{{ _.orderId }}/approval",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -30000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"customerDocument\": \"{{ _.otherDocument }}\",\n  \"approved\": true\n}"
+      },
+      "authentication": {}
+    },
+    {
+      "_id": "req_e3",
+      "_type": "request",
+      "parentId": "fld_7",
+      "name": "409 · entregar de novo a OS entregue",
+      "description": "INVALID_STATUS_TRANSITION: DELIVERED e estado final.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/service-orders/{{ _.orderId }}/delivery",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -31000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"employeeId\": \"{{ _.employeeId }}\"\n}"
+      },
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "req_e4",
+      "_type": "request",
+      "parentId": "fld_7",
+      "name": "409 · incluir servico na OS entregue",
+      "description": "SERVICE_ORDER_NOT_OPEN_FOR_ITEMS.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/service-orders/{{ _.orderId }}/services",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -32000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"serviceId\": \"{{ _.serviceId }}\",\n  \"employeeId\": \"{{ _.employeeId }}\"\n}"
+      },
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "req_e5",
+      "_type": "request",
+      "parentId": "fld_7",
+      "name": "404 · abrir OS com placa inexistente",
+      "description": "Placa que nao existe no cadastro.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/service-orders",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -33000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"customerDocument\": \"{{ _.document }}\",\n  \"plate\": \"AAA-0000\",\n  \"employeeId\": \"{{ _.employeeId }}\"\n}"
+      },
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "req_e6",
+      "_type": "request",
+      "parentId": "fld_7",
+      "name": "400 · aprovar com estoque insuficiente",
+      "description": "Abra uma OS nova, inclua esta quantidade, envie o orcamento e aprove: BUSINESS_RULE_VIOLATION, a ordem continua AWAITING_APPROVAL e o estoque nao muda.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/service-orders/{{ _.orderId }}/materials",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -34000,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"materialId\": \"{{ _.materialId }}\",\n  \"quantity\": 999,\n  \"employeeId\": \"{{ _.employeeId }}\"\n}"
+      },
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    }
+  ]
+}
