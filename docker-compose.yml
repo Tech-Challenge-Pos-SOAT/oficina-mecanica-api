@@ -35,7 +35,7 @@ services:
       # do Docker. Os testes de integracao ja desligam isso do mesmo jeito.
       DOCKER_COMPOSE_ENABLED: "false"
       # Segredo de assinatura do JWT. Trocar por um valor real fora de dev.
-      JWT_SECRET: ${JWT_SECRET:-dev-only-oficina-mecanica-api-jwt-signing-secret-troque-em-producao-32bytes}
+      JWT_SECRET: ${JWT_SECRET:-dev-only-oficina-mecanica-api-jwt-signing-secret-32bytes}
     ports:
       - "8080:8080"
 
