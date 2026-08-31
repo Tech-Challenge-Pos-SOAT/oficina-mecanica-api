@@ -35,6 +35,12 @@ public class MaterialTransaction {
         return new MaterialTransaction(null, materialId, null, quantity, TransactionType.IN, createdAt);
     }
 
+    /** Estorno: material volta ao estoque, mas mantendo o vinculo com a ordem que o consumiu. */
+    public static MaterialTransaction returned(Long materialId, Long serviceOrderId, Integer quantity, Instant createdAt) {
+        if (serviceOrderId == null) throw new IllegalArgumentException("serviceOrderId");
+        return new MaterialTransaction(null, materialId, serviceOrderId, quantity, TransactionType.IN, createdAt);
+    }
+
     public static MaterialTransaction out(Long materialId, Long serviceOrderId, Integer quantity, Instant createdAt) {
         if (serviceOrderId == null) throw new IllegalArgumentException("serviceOrderId");
         return new MaterialTransaction(null, materialId, serviceOrderId, quantity, TransactionType.OUT, createdAt);

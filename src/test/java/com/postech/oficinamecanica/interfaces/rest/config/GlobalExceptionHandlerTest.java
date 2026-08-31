@@ -15,7 +15,9 @@ import com.postech.oficinamecanica.domain.vehicle.VehicleAlreadyActiveException;
 import com.postech.oficinamecanica.domain.vehicle.VehicleAlreadyInactiveException;
 import com.postech.oficinamecanica.domain.vehicle.VehicleNotFoundException;
 import org.junit.jupiter.api.Test;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -143,10 +145,71 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void shouldMapInvalidStatusTo400() {
-        ResponseEntity<ErrorResponse> response = handler.handleInvalidStatus(new IllegalArgumentException());
+        // mensagem que o EntityStatus.valueOf realmente lanca
+        IllegalArgumentException erro = new IllegalArgumentException(
+            "No enum constant com.postech.oficinamecanica.domain.shared.EntityStatus.ATIVO");
+
+        ResponseEntity<ErrorResponse> response =
+            handler.handleIllegalArgument(erro, new MockHttpServletRequest("GET", "/api/services/1"));
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().code()).isEqualTo("INVALID_STATUS");
+    }
+
+    @Test
+    void shouldKeepTheOriginalMessageWhenTheErrorIsNotAboutStatus() {
+        ResponseEntity<ErrorResponse> response =
+            handler.handleIllegalArgument(
+                new IllegalArgumentException("Quantity to add must be greater than zero"),
+                new MockHttpServletRequest("POST", "/api/materials/1/stock-entries"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().code()).isEqualTo("INVALID_ARGUMENT");
+        assertThat(response.getBody().message()).isEqualTo("Quantity to add must be greater than zero");
+    }
+
+    @Test
+    void shouldMapInvalidStatusTo400WhenTheEndpointIsAStatusChangeEvenWithoutMessage() {
+        // PATCH /api/services/{id}/status lanca IllegalArgumentException sem mensagem
+        ResponseEntity<ErrorResponse> response = handler.handleIllegalArgument(
+            new IllegalArgumentException(),
+            new MockHttpServletRequest("PATCH", "/api/services/1/status"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().code()).isEqualTo("INVALID_STATUS");
+    }
+
+    @Test
+    void shouldMapInvalidStatusTo400WhenTheRequestFiltersByStatus() {
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/materials");
+        request.setParameter("status", "ARCHIVED");
+
+        ResponseEntity<ErrorResponse> response = handler.handleIllegalArgument(
+            new IllegalArgumentException("No enum constant ARCHIVED"), request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().code()).isEqualTo("INVALID_STATUS");
+    }
+
+    @Test
+    void shouldNotTreatAMissingParameterNameAsAStatusProblem() {
+        // o bug original: GET /api/customers/document sem -parameters no compilador
+        ResponseEntity<ErrorResponse> response = handler.handleIllegalArgument(
+            new IllegalArgumentException("Name for argument of type [java.lang.String] not specified"),
+            new MockHttpServletRequest("GET", "/api/customers/document"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().code()).isEqualTo("INVALID_ARGUMENT");
+    }
+
+    @Test
+    void shouldMapMissingRequiredParameterTo400() {
+        ResponseEntity<ErrorResponse> response = handler.handleMissingParameter(
+            new MissingServletRequestParameterException("document", "String"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().code()).isEqualTo("MISSING_PARAMETER");
+        assertThat(response.getBody().message()).contains("document");
     }
 
     @Test

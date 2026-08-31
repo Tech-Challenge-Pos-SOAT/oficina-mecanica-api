@@ -31,3 +31,9 @@ springdoc:
 jwt:
   secret: ${JWT_SECRET:dev-only-oficina-mecanica-api-jwt-signing-secret-troque-em-producao-32bytes}
   expiration-ms: ${JWT_EXPIRATION_MS:3600000}
+
+serviceorder:
+  # Prazo, em dias, para o cliente responder ao orcamento enviado.
+  budget-approval-deadline-days: ${BUDGET_APPROVAL_DEADLINE_DAYS:7}
+  # Varredura diaria as 03:00 (America/Sao_Paulo).
+  budget-expiration-cron: ${BUDGET_EXPIRATION_CRON:0 0 3 * * *}

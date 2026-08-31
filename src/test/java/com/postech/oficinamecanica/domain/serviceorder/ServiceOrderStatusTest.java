@@ -28,6 +28,27 @@ class ServiceOrderStatusTest {
     }
 
     @Test
+    void shouldAllowCancellationBeforeAndDuringExecution() {
+        assertThat(ServiceOrderStatus.RECEIVED.canTransitionTo(ServiceOrderStatus.CANCELLED)).isTrue();
+        assertThat(ServiceOrderStatus.IN_DIAGNOSIS.canTransitionTo(ServiceOrderStatus.CANCELLED)).isTrue();
+        assertThat(ServiceOrderStatus.AWAITING_APPROVAL.canTransitionTo(ServiceOrderStatus.CANCELLED)).isTrue();
+        assertThat(ServiceOrderStatus.IN_EXECUTION.canTransitionTo(ServiceOrderStatus.CANCELLED)).isTrue();
+    }
+
+    @Test
+    void shouldNotAllowCancellationAfterTheOrderIsClosed() {
+        assertThat(ServiceOrderStatus.FINISHED.canTransitionTo(ServiceOrderStatus.CANCELLED)).isFalse();
+        assertThat(ServiceOrderStatus.DELIVERED.canTransitionTo(ServiceOrderStatus.CANCELLED)).isFalse();
+    }
+
+    @Test
+    void shouldNotAllowAnyTransitionAfterCancelled() {
+        for (ServiceOrderStatus status : ServiceOrderStatus.values()) {
+            assertThat(ServiceOrderStatus.CANCELLED.canTransitionTo(status)).isFalse();
+        }
+    }
+
+    @Test
     void shouldNotAllowAnyTransitionAfterDelivered() {
         for (ServiceOrderStatus status : ServiceOrderStatus.values()) {
             assertThat(ServiceOrderStatus.DELIVERED.canTransitionTo(status)).isFalse();

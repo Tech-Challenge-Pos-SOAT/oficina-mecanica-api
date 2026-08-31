@@ -9,7 +9,7 @@ import java.time.Instant;
  * Material incluido na ordem, com preco unitario congelado no momento da
  * inclusao. "stockDebited" marca se a baixa de estoque desse item ja aconteceu
  * - reparo adicional aprova a mesma ordem de novo e so os itens novos podem
- * sair do estoque.
+ * sair do estoque. No cancelamento, sao esses mesmos itens que voltam.
  */
 public class ServiceOrderMaterial {
     private final Long id;
@@ -51,6 +51,12 @@ public class ServiceOrderMaterial {
 
     public void markStockDebited() {
         this.stockDebited = true;
+        this.updatedAt = Instant.now();
+    }
+
+    /** Estorno: o item volta a nao ter baixa, para nao ser devolvido duas vezes. */
+    public void markStockReturned() {
+        this.stockDebited = false;
         this.updatedAt = Instant.now();
     }
 

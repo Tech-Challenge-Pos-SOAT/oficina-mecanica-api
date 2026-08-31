@@ -7,5 +7,7 @@ public record ServiceOrderMaterialResponse(
     Long materialId,
     Integer quantity,
     BigDecimal price,
-    BigDecimal total
+    BigDecimal total,
+    /** true = peca ja baixada do estoque, ou seja, veio de um ciclo aprovado. */
+    boolean stockDebited
 ) {}

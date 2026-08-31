@@ -74,6 +74,7 @@ public interface ServiceOrderPersistenceMapper {
                 service.getId(),
                 service.getServiceId(),
                 service.getPrice(),
+                service.isApproved(),
                 service.getCreatedAt(),
                 service.getUpdatedAt()
             ));
