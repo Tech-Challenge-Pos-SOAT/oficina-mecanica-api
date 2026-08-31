@@ -55,19 +55,13 @@ def fetch_quality_gate_status(host, token, project_key):
 def build_summary(data, host, project_key):
     status = data["projectStatus"]["status"]  # OK | ERROR | WARN | NONE
     conditions = data["projectStatus"].get("conditions", [])
-    dashboard_url = f"{host}/dashboard?id={project_key}"
 
     icon = "✅" if status == "OK" else "⚠️"
     lines = [f"## {icon} SonarQube Quality Gate: {status}", ""]
     lines.append(
         "_Este job nao bloqueia mais o pipeline por causa da Quality Gate "
-        "(decisao do time) - o status abaixo e so informativo. Ver detalhes "
-        f"completos no [dashboard do SonarQube]({dashboard_url})._"
+        "(decisao do time) - o status abaixo e so informativo._"
     )
-    # Link em texto puro tambem, caso o markdown do link acima seja
-    # renderizado como relativo por algum motivo (proxy, secret malformado,
-    # etc.) - assim sempre da pra copiar/colar a URL absoluta.
-    lines.append(f"Link direto: {dashboard_url}")
     lines.append("")
 
     failed = [c for c in conditions if c.get("status") == "ERROR"]
@@ -104,8 +98,7 @@ def main():
         # ser gerado desta vez (rede fora, instancia reiniciando, etc.).
         print(
             "## ⚠️ SonarQube Quality Gate\n\n"
-            f"Nao foi possivel consultar o status via API neste run ({e}). "
-            f"Ver o dashboard diretamente: {host}/dashboard?id={args.project_key}\n"
+            f"Nao foi possivel consultar o status via API neste run ({e}).\n"
         )
         print(f"Aviso: falha ao consultar Quality Gate API: {e}", file=sys.stderr)
 
