@@ -2,9 +2,9 @@
 
 Gerado automaticamente pelo pipeline de CI (GitHub Actions) a cada push na `main`. Nao editar manualmente - o proximo push sobrescreve este arquivo.
 
-- **Gerado em:** 2026-08-31 02:49 UTC
-- **Commit analisado:** `a64ce03`
-- **Execucao do workflow:** https://github.com/Tech-Challenge-Pos-SOAT/oficina-mecanica-api/actions/runs/33351521583
+- **Gerado em:** 2026-08-31 23:24 UTC
+- **Commit analisado:** `9504491`
+- **Execucao do workflow:** https://github.com/Tech-Challenge-Pos-SOAT/oficina-mecanica-api/actions/runs/33450083114
 
 ## 1. Dependencias (OWASP Dependency-Check)
 
@@ -14,14 +14,17 @@ Scan das bibliotecas/dependencias do projeto (Spring Boot, driver do Postgres, J
 
 | Severidade | Quantidade |
 |---|---|
+| CRITICAL | 1 |
 | HIGH | 1 |
 | MEDIUM | 33 |
-| **Total** | **34** |
+| LOW | 1 |
+| **Total** | **36** |
 
 ### Vulnerabilidades encontradas
 
 | Severidade | CVE | Dependencia | CVSS |
 |---|---|---|---|
+| CRITICAL | CVE-2026-59313 | `spring-core-6.2.19.jar` | 9.8 |
 | HIGH | CVE-2026-54291 | `postgresql-42.7.11.jar` | 5.9 |
 | MEDIUM | CVE-2025-48924 | `commons-lang3-3.17.0.jar` | 5.3 |
 | MEDIUM | CVE-2026-54515 | `jackson-databind-2.21.4.jar` | 5.3 |
@@ -56,6 +59,7 @@ Scan das bibliotecas/dependencias do projeto (Spring Boot, driver do Postgres, J
 | MEDIUM | CVE-2026-41238 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | - |
 | MEDIUM | CVE-2026-41239 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | - |
 | MEDIUM | CVE-2026-75838 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | - |
+| LOW | CVE-2026-59314 | `spring-core-6.2.19.jar` | 3.7 |
 
 ## 2. Imagem Docker (Trivy)
 
