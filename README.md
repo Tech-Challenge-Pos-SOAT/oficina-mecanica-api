@@ -52,11 +52,14 @@ Monolito organizado em camadas, seguindo os principios taticos de DDD:
 ```
 com.postech.oficinamecanica
 ├── domain            # entidades, agregados, regras de negocio (sem dependencia de framework)
-│   ├── cliente
-│   ├── veiculo
-│   ├── servico
-│   ├── peca
-│   └── ordemservico   # agregado central (subdominio principal)
+│   ├── auth
+│   ├── customer        # equivalente a "cliente"
+│   ├── employee         # equivalente a "usuario/funcionario"
+│   ├── material          # equivalente a "peca"
+│   ├── materialtransaction
+│   ├── service             # equivalente a "servico"
+│   ├── serviceorder         # equivalente a "ordemservico" - agregado central (subdominio principal)
+│   └── vehicle                # equivalente a "veiculo"
 ├── application        # casos de uso / orquestracao
 ├── infrastructure      # persistencia JPA, seguranca (JWT), configuracoes
 └── interfaces           # controllers REST, DTOs

@@ -195,3 +195,175 @@ jobs:
             trivy-report.txt
             trivy-report.json
           retention-days: 30
+
+  sonar:
+    name: "6. SonarQube (qualidade + vulnerabilidades)"
+    needs: trivy
+    # Roda tanto em push na main quanto em Pull Request, por pedido do time
+    # (a maquina com o SonarQube local + runner vai ficar sempre ligada).
+    # Duas limitacoes REAIS da Community Edition que isso nao remove (nao
+    # tem upgrade pago no projeto, entao convivemos com elas):
+    # 1. CE nao aceita "sonar.branch.name" (erro "Developer Edition or above
+    #    is required") - ou seja, nao existe o conceito nativo de "branch"
+    #    dentro de UM projeto. Por isso NAO usamos sonar.branch.name aqui.
+    # 2. Sem branch nativa, se todo PR escrevesse no mesmo projectKey da
+    #    main, cada scan simplesmente SOBRESCREVERIA a analise da main com o
+    #    codigo do PR, embaralhando o historico de qualidade. Para evitar
+    #    isso, PRs usam um projectKey proprio (um "projeto" separado por PR
+    #    no SonarQube local, ver step abaixo) - assim cada PR tem sua propria
+    #    Quality Gate, sem contaminar o dashboard da main.
+    # Consequencia visivel: nao ha comentario/decoracao automatica no PR do
+    # GitHub (isso e Developer Edition+); o resultado aparece como sucesso/
+    # falha do check "SonarQube" e no dashboard local do SonarQube.
+    if: ${{ !failure() && !cancelled() && (github.event_name == 'push' || github.event_name == 'pull_request') }}
+    runs-on: [self-hosted]
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Baixar issues do Dependency-Check (etapa 4) para importar no Sonar
+        uses: actions/download-artifact@v4
+        with:
+          name: dependency-check-sonar-issues
+          path: external-reports/
+        continue-on-error: true
+        # Fica em "external-reports/" (fora de target/) de proposito: o
+        # "mvn clean" do step abaixo apaga o target/ inteiro antes de
+        # analisar - se baixassemos o arquivo pra dentro de target/, o
+        # clean apagaria ele antes do Sonar conseguir ler.
+
+      - name: Definir projectKey (separado por PR, unico para a main)
+        id: sonar_project
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "key=oficina-mecanica-api-pr-${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "key=oficina-mecanica-api" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: SonarQube Scan (instancia local via Docker Compose)
+        run: |
+          mvn -B clean verify org.sonarsource.scanner.maven:sonar-maven-plugin:5.7.0.6970:sonar \
+            -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+            -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
+            -Dsonar.projectKey=${{ steps.sonar_project.outputs.key }} \
+            -Dsonar.externalIssuesReportPaths=external-reports/sonar-external-issues.json \
+            -Dsonar.qualitygate.wait=true
+        # "clean" aqui e importante: runner self-hosted REUTILIZA a mesma
+        #   pasta de trabalho (_work) entre execucoes (ao contrario dos
+        #   runners do GitHub, que sao uma maquina nova a cada job) - sem
+        #   "clean" o target/ de um PR anterior podia vazar/misturar dados
+        #   de cobertura na analise seguinte.
+        # Goal totalmente qualificado (nao "sonar:sonar" curto) de proposito:
+        #   o prefixo curto "sonar" so resolve se ~/.m2/settings.xml tiver o
+        #   grupo org.sonarsource.scanner.maven cadastrado - isso depende de
+        #   configuracao pessoal da maquina de quem roda o runner. Chamando
+        #   com groupId:artifactId:versao:goal funciona em qualquer maquina,
+        #   sem depender de settings.xml de ninguem.
+        # sonar.externalIssuesReportPaths: importa as vulnerabilidades do
+        #   Dependency-Check (etapa 4) como issues dentro do proprio
+        #   dashboard do SonarQube, sem precisar de plugin (o plugin da
+        #   comunidade pra isso esta sem manutencao desde 2024). Se o
+        #   arquivo nao existir (download falhou/sem vulnerabilidade), o
+        #   Sonar so ignora essa propriedade.
+        # SONAR_HOST_URL: use http://localhost:9000 - o runner self-hosted
+        #   roda na mesma maquina do SonarQube local, entao localhost e
+        #   sempre alcancavel; um host tipo "sonarqube.local" (mDNS) pode
+        #   resolver para um IP interno instavel dependendo do runtime de
+        #   container (ja vimos isso com OrbStack) e falhar com "No route
+        #   to host" de forma intermitente.
+        # SONAR_TOKEN: gerado em My Account > Security no SonarQube local
+        #   (usar sonar.token, sonar.login esta descontinuado desde o
+        #   SonarQube/Scanner 10.x).
+        # Cadastrar os dois em Settings > Secrets and variables > Actions.
+
+  vulnerability-report:
+    name: "7. Relatorio final de vulnerabilidades"
+    needs: [dependency-check, trivy]
+    # So gera/commita o relatorio em push na main - em PR nao faz sentido
+    # (o relatorio final e sobre o estado da main, e commitar em toda branch
+    # de PR geraria ruido/conflito). O job roda mesmo se o Sonar (job acima)
+    # falhar ou for pulado - o relatorio de dependencia/imagem nao depende
+    # dele, so dos artifacts do Dependency-Check e do Trivy.
+    if: ${{ !failure() && !cancelled() && github.event_name == 'push' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # precisa do token com permissao de escrita (permissions: contents:
+          # write acima) para o "git push" do ultimo step conseguir mandar o
+          # commit de volta pro repositorio.
+          persist-credentials: true
+
+      - name: Baixar relatorio OWASP Dependency-Check (etapa 4)
+        uses: actions/download-artifact@v4
+        with:
+          name: dependency-check-report
+          path: artifacts/dependency-check/
+        continue-on-error: true
+
+      - name: Baixar relatorio Trivy (etapa 5)
+        uses: actions/download-artifact@v4
+        with:
+          name: trivy-report
+          path: artifacts/trivy/
+        continue-on-error: true
+
+      - name: Gerar relatorio consolidado (Markdown)
+        run: |
+          mkdir -p docs
+          python3 .github/scripts/generate_vulnerability_report.py \
+            --dependency-check artifacts/dependency-check/dependency-check-report.json \
+            --trivy artifacts/trivy/trivy-report.json \
+            --output docs/relatorio-vulnerabilidades.md \
+            --commit "${{ github.sha }}" \
+            --run-url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        # Os dois --caminho apontam pros artifacts baixados acima. O script
+        # tolera qualquer um dos dois estar ausente (ex.: scan falhou/foi
+        # pulado naquele push) e gera o relatorio com o que tiver, sem
+        # quebrar o job.
+
+      - name: Upload relatorio consolidado (artifact, copia de seguranca)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-vulnerabilidades
+          path: docs/relatorio-vulnerabilidades.md
+          retention-days: 90
+
+      - name: Commitar relatorio atualizado no repositorio
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/relatorio-vulnerabilidades.md
+          if git diff --cached --quiet; then
+            echo "Sem mudancas no relatorio, nada para commitar."
+          else
+            git commit -m "docs: atualiza relatorio de vulnerabilidades [skip ci]"
+            git push
+          fi
+        # "docs/relatorio-vulnerabilidades.md" fica commitado no repositorio
+        # (nao so como artifact temporario do Actions) - e ele que deve ser
+        # linkado/anexado no "Documento de entrega em PDF" exigido pelo
+        # edital, ja que fica versionado e nao expira como os artifacts.
+        # "[skip ci]" na mensagem evita disparar o pipeline de novo por
+        # causa desse proprio commit (o "on: push" reagiria a ele senao).
+
+  # Regras de branch/PR adicionais (configurar em GitHub > Settings > Branches,
+  # nao via workflow):
+  # 1. Todas as branches devem comecar com "feature/".
+  # 2. Merge para main bloqueado sem aprovacao de outro integrante do time
+  #    (e sem os checks acima passando).
+  # 3. Quem abre o PR nao pode aprovar/mergear o proprio PR (o GitHub ja
+  #    bloqueia isso por padrao).
