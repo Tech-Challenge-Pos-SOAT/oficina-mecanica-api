@@ -20,7 +20,7 @@ spring:
       lifecycle-management: start-and-stop
 
 server:
-  port: 8084
+  port: 8080
 
 springdoc:
   swagger-ui:

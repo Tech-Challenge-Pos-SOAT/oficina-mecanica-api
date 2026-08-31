@@ -7,8 +7,7 @@ A coleção tem 24 requisições em 5 pastas, na ordem de execução.
 
 | Ambiente | baseUrl | Quando usar |
 |---|---|---|
-| Base Environment | `http://localhost:8080` | `docker compose up --build` (padrão) |
-| Local (mvn spring-boot:run) | `http://localhost:8084` | rodando fora do Docker, na porta do `application.yml` |
+| Base Environment | `http://localhost:8080` | qualquer forma de rodar (Docker ou `mvn spring-boot:run`) |
 
 Variáveis que você provavelmente vai ajustar: `token`, `orderId`, `serviceId`, `materialId`.
 
@@ -17,7 +16,7 @@ Variáveis que você provavelmente vai ajustar: `token`, `orderId`, `serviceId`,
 ```bash
 docker compose up --build          # sobe Postgres + API em http://localhost:8080
 # ou
-mvn spring-boot:run                # sobe em http://localhost:8084
+mvn spring-boot:run                # sobe em http://localhost:8080 (usa um Postgres local ou spring-boot-docker-compose)
 ```
 
 O Flyway já cria o schema e semeia dados: 5 clientes (V2), 7 materiais (V3_1 e V4) e
