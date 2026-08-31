@@ -27,10 +27,17 @@ propria consulta.
 """
 import argparse
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
 from base64 import b64encode
+
+# Link fixo para o relatorio de vulnerabilidades consolidado (source of
+# truth versionado no repo, atualizado a cada rodada de correcao de CVEs).
+# Usa GITHUB_SERVER_URL/GITHUB_REPOSITORY (sempre presentes no Actions) para
+# nao depender de host fixo - funciona igual em fork/mirror.
+DEFAULT_REPORT_PATH = "docs/relatorio-vulnerabilidades.md"
 
 
 def normalize_host(host):
@@ -52,7 +59,7 @@ def fetch_quality_gate_status(host, token, project_key):
         return json.load(resp)
 
 
-def build_summary(data, host, project_key):
+def build_summary(data, host, project_key, report_url=None):
     status = data["projectStatus"]["status"]  # OK | ERROR | WARN | NONE
     conditions = data["projectStatus"].get("conditions", [])
 
@@ -62,6 +69,10 @@ def build_summary(data, host, project_key):
         "_Este job nao bloqueia mais o pipeline por causa da Quality Gate "
         "(decisao do time) - o status abaixo e so informativo._"
     )
+    if report_url:
+        lines.append(
+            f"Relatorio de vulnerabilidades atualizado: [{DEFAULT_REPORT_PATH}]({report_url})"
+        )
     lines.append("")
 
     failed = [c for c in conditions if c.get("status") == "ERROR"]
@@ -90,15 +101,25 @@ def main():
 
     host = normalize_host(args.host)
 
+    server_url = os.environ.get("GITHUB_SERVER_URL", "https://github.com").rstrip("/")
+    repository = os.environ.get("GITHUB_REPOSITORY", "")
+    report_url = f"{server_url}/{repository}/blob/main/{DEFAULT_REPORT_PATH}" if repository else None
+
     try:
         data = fetch_quality_gate_status(host, args.token, args.project_key)
-        print(build_summary(data, host, args.project_key))
+        print(build_summary(data, host, args.project_key, report_url))
     except (urllib.error.URLError, KeyError, json.JSONDecodeError, TimeoutError) as e:
         # Nao falha o job por causa disso - so avisa que o resumo nao pode
         # ser gerado desta vez (rede fora, instancia reiniciando, etc.).
+        fallback_link = (
+            f"\nRelatorio de vulnerabilidades atualizado: [{DEFAULT_REPORT_PATH}]({report_url})\n"
+            if report_url
+            else "\n"
+        )
         print(
             "## ⚠️ SonarQube Quality Gate\n\n"
-            f"Nao foi possivel consultar o status via API neste run ({e}).\n"
+            f"Nao foi possivel consultar o status via API neste run ({e})."
+            f"{fallback_link}"
         )
         print(f"Aviso: falha ao consultar Quality Gate API: {e}", file=sys.stderr)
 
