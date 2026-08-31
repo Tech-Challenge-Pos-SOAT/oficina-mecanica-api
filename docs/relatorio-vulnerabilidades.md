@@ -2,9 +2,9 @@
 
 Gerado automaticamente pelo pipeline de CI (GitHub Actions) a cada push na `main`. Nao editar manualmente - o proximo push sobrescreve este arquivo.
 
-- **Gerado em:** 2026-08-31 01:45 UTC
-- **Commit analisado:** `2adf532`
-- **Execucao do workflow:** https://github.com/Tech-Challenge-Pos-SOAT/oficina-mecanica-api/actions/runs/33348247569
+- **Gerado em:** 2026-08-31 02:32 UTC
+- **Commit analisado:** `d55bc7b`
+- **Execucao do workflow:** https://github.com/Tech-Challenge-Pos-SOAT/oficina-mecanica-api/actions/runs/33350643580
 
 ## 1. Dependencias (OWASP Dependency-Check)
 
@@ -14,67 +14,48 @@ Scan das bibliotecas/dependencias do projeto (Spring Boot, driver do Postgres, J
 
 | Severidade | Quantidade |
 |---|---|
-| CRITICAL | 8 |
-| HIGH | 7 |
-| MEDIUM | 50 |
-| **Total** | **65** |
+| HIGH | 1 |
+| MEDIUM | 33 |
+| **Total** | **34** |
 
 ### Vulnerabilidades encontradas
 
 | Severidade | CVE | Dependencia | CVSS |
 |---|---|---|---|
-| CRITICAL | CVE-2026-65637 | `tomcat-embed-core-10.1.55.jar` | 9.8 |
-| CRITICAL | CVE-2026-65905 | `tomcat-embed-core-10.1.55.jar` | 9.8 |
-| CRITICAL | CVE-2026-53434 | `tomcat-embed-core-10.1.55.jar` | 9.1 |
-| CRITICAL | CVE-2026-55276 | `tomcat-embed-core-10.1.55.jar` | 9.1 |
-| CRITICAL | CVE-2026-59083 | `tomcat-embed-core-10.1.55.jar` | 9.1 |
-| CRITICAL | CVE-2026-59084 | `tomcat-embed-core-10.1.55.jar` | 9.1 |
-| CRITICAL | CVE-2026-65182 | `tomcat-embed-core-10.1.55.jar` | 9.1 |
-| CRITICAL | CVE-2026-68525 | `tomcat-embed-core-10.1.55.jar` | 9.1 |
 | HIGH | CVE-2026-54291 | `postgresql-42.7.11.jar` | 5.9 |
-| HIGH | CVE-2026-65183 | `tomcat-embed-core-10.1.55.jar` | 8.1 |
-| HIGH | CVE-2026-66422 | `tomcat-embed-core-10.1.55.jar` | 8.1 |
-| HIGH | CVE-2026-68569 | `tomcat-embed-core-10.1.55.jar` | 8.1 |
-| HIGH | CVE-2026-65927 | `tomcat-embed-core-10.1.55.jar` | 7.5 |
-| HIGH | CVE-2026-68763 | `tomcat-embed-core-10.1.55.jar` | 7.5 |
-| HIGH | CVE-2026-53404 | `tomcat-embed-core-10.1.55.jar` | 7.3 |
 | MEDIUM | CVE-2025-48924 | `commons-lang3-3.17.0.jar` | 5.3 |
 | MEDIUM | CVE-2026-54515 | `jackson-databind-2.21.4.jar` | 5.3 |
 | MEDIUM | CVE-2026-34479 | `log4j-api-2.24.3.jar` | 7.5 |
 | MEDIUM | CVE-2026-34477 | `log4j-api-2.24.3.jar` | 5.9 |
 | MEDIUM | CVE-2026-49844 | `log4j-api-2.24.3.jar` | 5.9 |
-| MEDIUM | CVE-2026-49978 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2025-26791 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-49458 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-49459 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-41240 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-0540 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65902 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65914 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2025-15599 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65898 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | 7.2 |
-| MEDIUM | CVE-2026-65899 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65900 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65901 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65903 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65912 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65913 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-66010 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-41238 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | - |
-| MEDIUM | CVE-2026-41239 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | - |
-| MEDIUM | CVE-2026-75838 | `swagger-ui-5.18.3.jar: swagger-ui-bundle.js` | - |
-| MEDIUM | CVE-2026-49978 | `swagger-ui-5.18.3.jar: swagger-ui-es-bundle.js` | 6.1 |
-| MEDIUM | CVE-2025-26791 | `swagger-ui-5.18.3.jar: swagger-ui-es-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-49458 | `swagger-ui-5.18.3.jar: swagger-ui-es-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-49459 | `swagger-ui-5.18.3.jar: swagger-ui-es-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-41240 | `swagger-ui-5.18.3.jar: swagger-ui-es-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-0540 | `swagger-ui-5.18.3.jar: swagger-ui-es-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65902 | `swagger-ui-5.18.3.jar: swagger-ui-es-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65914 | `swagger-ui-5.18.3.jar: swagger-ui-es-bundle.js` | 6.1 |
-| MEDIUM | CVE-2025-15599 | `swagger-ui-5.18.3.jar: swagger-ui-es-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65898 | `swagger-ui-5.18.3.jar: swagger-ui-es-bundle.js` | 7.2 |
-
-_... e mais 15 vulnerabilidade(s). Relatorio completo: artifact `dependency-check-report` (HTML/JSON) do workflow._
+| MEDIUM | CVE-2026-49978 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-49458 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-49459 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-41240 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-65902 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-65898 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 7.2 |
+| MEDIUM | CVE-2026-65899 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-65900 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-65901 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-65903 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-66010 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-41238 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | - |
+| MEDIUM | CVE-2026-41239 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | - |
+| MEDIUM | CVE-2026-75838 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | - |
+| MEDIUM | CVE-2026-49978 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-49458 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-49459 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-41240 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-65902 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-65898 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | 7.2 |
+| MEDIUM | CVE-2026-65899 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-65900 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-65901 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-65903 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-66010 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | 6.1 |
+| MEDIUM | CVE-2026-41238 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | - |
+| MEDIUM | CVE-2026-41239 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | - |
+| MEDIUM | CVE-2026-75838 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | - |
 
 ## 2. Imagem Docker (Trivy)
 
