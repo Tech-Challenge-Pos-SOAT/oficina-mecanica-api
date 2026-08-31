@@ -36,6 +36,7 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -180,7 +181,7 @@ class ServiceOrderFlowIntegrationTest {
     }
 
     @Test
-    void shouldKeepOrderAwaitingApprovalWhenStockIsInsufficient() throws Exception {
+    void shouldCancelOrderWhenStockIsInsufficient() throws Exception {
         Long orderId = openOrder();
         employeeAction("/diagnosis", orderId, "IN_DIAGNOSIS");
 
@@ -195,13 +196,103 @@ class ServiceOrderFlowIntegrationTest {
         mockMvc.perform(post("/public/service-orders/" + orderId + "/approval")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"customerDocument\":\"" + DOCUMENT + "\",\"approved\":true}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("BUSINESS_RULE_VIOLATION"));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
 
         assertThat(materialRepository.findById(materialId).orElseThrow().getStockQuantity()).isEqualTo(10);
         mockMvc.perform(get("/public/service-orders/" + orderId + "?document=" + DOCUMENT))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("AWAITING_APPROVAL"));
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+    }
+
+    @Test
+    void shouldCancelOrderWhenTheServiceLeftTheCatalog() throws Exception {
+        Long orderId = openOrder();
+        employeeAction("/diagnosis", orderId, "IN_DIAGNOSIS");
+
+        mockMvc.perform(post("/api/service-orders/" + orderId + "/services")
+                        .header("Authorization", authHeader)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"serviceId\":" + serviceId + ",\"employeeId\":" + employeeId + "}"))
+                .andExpect(status().isOk());
+
+        employeeAction("/budget", orderId, "AWAITING_APPROVAL");
+
+        mockMvc.perform(patch("/api/services/" + serviceId + "/status")
+                        .header("Authorization", authHeader)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"INACTIVE\"}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post("/public/service-orders/" + orderId + "/approval")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"customerDocument\":\"" + DOCUMENT + "\",\"approved\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+    }
+
+    @Test
+    void shouldKeepTheApprovedWorkWhenTheCustomerRejectsAnAdditionalRepair() throws Exception {
+        Long orderId = openOrder();
+        employeeAction("/diagnosis", orderId, "IN_DIAGNOSIS");
+
+        mockMvc.perform(post("/api/service-orders/" + orderId + "/materials")
+                        .header("Authorization", authHeader)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"materialId\":" + materialId + ",\"quantity\":2,\"employeeId\":" + employeeId + "}"))
+                .andExpect(status().isOk());
+        employeeAction("/budget", orderId, "AWAITING_APPROVAL");
+        mockMvc.perform(post("/public/service-orders/" + orderId + "/approval")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"customerDocument\":\"" + DOCUMENT + "\",\"approved\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("IN_EXECUTION"));
+
+        // reparo adicional
+        mockMvc.perform(post("/api/service-orders/" + orderId + "/materials")
+                        .header("Authorization", authHeader)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"materialId\":" + materialId + ",\"quantity\":3,\"employeeId\":" + employeeId + "}"))
+                .andExpect(status().isOk());
+        employeeAction("/budget", orderId, "AWAITING_APPROVAL");
+
+        mockMvc.perform(post("/public/service-orders/" + orderId + "/approval")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"customerDocument\":\"" + DOCUMENT + "\",\"approved\":false,"
+                                + "\"reason\":\"Nao quero o servico extra\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("IN_EXECUTION"))
+                .andExpect(jsonPath("$.materials", hasSize(1)));
+
+        // so a primeira baixa aconteceu: 10 - 2
+        assertThat(materialRepository.findById(materialId).orElseThrow().getStockQuantity()).isEqualTo(8);
+    }
+
+    @Test
+    void shouldReturnMaterialsToStockWhenAnExecutingOrderIsCancelled() throws Exception {
+        Long orderId = openOrder();
+        employeeAction("/diagnosis", orderId, "IN_DIAGNOSIS");
+        mockMvc.perform(post("/api/service-orders/" + orderId + "/materials")
+                        .header("Authorization", authHeader)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"materialId\":" + materialId + ",\"quantity\":2,\"employeeId\":" + employeeId + "}"))
+                .andExpect(status().isOk());
+        employeeAction("/budget", orderId, "AWAITING_APPROVAL");
+        mockMvc.perform(post("/public/service-orders/" + orderId + "/approval")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"customerDocument\":\"" + DOCUMENT + "\",\"approved\":true}"))
+                .andExpect(status().isOk());
+        assertThat(materialRepository.findById(materialId).orElseThrow().getStockQuantity()).isEqualTo(8);
+
+        mockMvc.perform(post("/api/service-orders/" + orderId + "/cancellation")
+                        .header("Authorization", authHeader)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"employeeId\":" + employeeId + ",\"reason\":\"Cliente desistiu\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        assertThat(materialRepository.findById(materialId).orElseThrow().getStockQuantity()).isEqualTo(10);
+        assertThat(materialTransactionRepository.findByMaterialIdOrderByIdAsc(materialId)).hasSize(2);
     }
 
     @Test

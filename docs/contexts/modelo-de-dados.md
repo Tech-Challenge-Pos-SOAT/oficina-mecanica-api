@@ -81,6 +81,12 @@ Enums que saem do schema: `ServiceOrderStatus`, `EntityStatus` (ACTIVE/INACTIVE)
 - `author_type` VARCHAR(20): CUSTOMER / EMPLOYEE / SYSTEM.
 - `author_id` BIGINT: nulo se author_type = SYSTEM.
 
+### ServiceOrder — ajustes da V8
+
+- `service_order_service.approved` BOOLEAN NOT NULL DEFAULT FALSE: espelha o `stock_debited` do material. Marca o serviço que o cliente já autorizou, para o descarte de um reparo adicional recusado saber quais itens tirar do orçamento. A migration marca como `TRUE` os serviços de ordens que já estavam em execução, finalizadas ou entregues.
+- A varredura diária do prazo de aprovação usa o índice `idx_service_order_status`, que **já existe desde a V1** (linha 77). A V8 não o recria — uma primeira versão desta migration tentava criar de novo e quebrava com `42P07 relation already exists`.
+- O status `CANCELLED` **não exigiu alteração de schema**: `service_order.status` é `VARCHAR(30)` sem constraint de valores.
+
 ### ServiceOrder — ajustes da V7
 
 A OS nasce sem orcamento, entao o V7 (`V7__service_order_flow.sql`) mexeu em tres pontos do schema original:

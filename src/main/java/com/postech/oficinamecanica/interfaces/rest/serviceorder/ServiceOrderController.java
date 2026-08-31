@@ -1,6 +1,8 @@
 package com.postech.oficinamecanica.interfaces.rest.serviceorder;
 
 import com.postech.oficinamecanica.application.serviceorder.AddMaterialToServiceOrderUseCase;
+import com.postech.oficinamecanica.application.serviceorder.CancelServiceOrderUseCase;
+import com.postech.oficinamecanica.application.serviceorder.ExpireServiceOrderBudgetsUseCase;
 import com.postech.oficinamecanica.application.serviceorder.AddServiceToServiceOrderUseCase;
 import com.postech.oficinamecanica.application.serviceorder.DeliverServiceOrderUseCase;
 import com.postech.oficinamecanica.application.serviceorder.FinishServiceOrderUseCase;
@@ -39,6 +41,8 @@ public class ServiceOrderController {
     private final DeliverServiceOrderUseCase deliverServiceOrderUseCase;
     private final GetServiceOrderUseCase getServiceOrderUseCase;
     private final ListServiceOrdersUseCase listServiceOrdersUseCase;
+    private final CancelServiceOrderUseCase cancelServiceOrderUseCase;
+    private final ExpireServiceOrderBudgetsUseCase expireServiceOrderBudgetsUseCase;
     private final ServiceOrderRestMapper mapper;
 
     public ServiceOrderController(OpenServiceOrderUseCase openServiceOrderUseCase,
@@ -50,6 +54,8 @@ public class ServiceOrderController {
                                   DeliverServiceOrderUseCase deliverServiceOrderUseCase,
                                   GetServiceOrderUseCase getServiceOrderUseCase,
                                   ListServiceOrdersUseCase listServiceOrdersUseCase,
+                                  CancelServiceOrderUseCase cancelServiceOrderUseCase,
+                                  ExpireServiceOrderBudgetsUseCase expireServiceOrderBudgetsUseCase,
                                   ServiceOrderRestMapper mapper) {
         this.openServiceOrderUseCase = openServiceOrderUseCase;
         this.startDiagnosisUseCase = startDiagnosisUseCase;
@@ -60,6 +66,8 @@ public class ServiceOrderController {
         this.deliverServiceOrderUseCase = deliverServiceOrderUseCase;
         this.getServiceOrderUseCase = getServiceOrderUseCase;
         this.listServiceOrdersUseCase = listServiceOrdersUseCase;
+        this.cancelServiceOrderUseCase = cancelServiceOrderUseCase;
+        this.expireServiceOrderBudgetsUseCase = expireServiceOrderBudgetsUseCase;
         this.mapper = mapper;
     }
 
@@ -121,6 +129,23 @@ public class ServiceOrderController {
                                        @Valid @RequestBody FinishServiceOrderRequest request) {
         return mapper.toResponse(
             finishServiceOrderUseCase.execute(id, request.employeeId(), request.observation()));
+    }
+
+    @PostMapping("/{id}/cancellation")
+    @Operation(summary = "Cancela a ordem (-> CANCELLED) e devolve ao estoque as pecas ja baixadas")
+    public ServiceOrderResponse cancel(@PathVariable Long id,
+                                       @Valid @RequestBody CancelServiceOrderRequest request) {
+        return mapper.toResponse(
+            cancelServiceOrderUseCase.execute(id, request.employeeId(), request.reason()));
+    }
+
+    @PostMapping("/expiration-check")
+    @Operation(summary = "Aplica agora o prazo de resposta do orcamento, sem esperar a varredura diaria")
+    public List<ServiceOrderResponse> runExpirationCheck() {
+        return expireServiceOrderBudgetsUseCase.execute()
+            .stream()
+            .map(mapper::toResponse)
+            .toList();
     }
 
     @PostMapping("/{id}/delivery")

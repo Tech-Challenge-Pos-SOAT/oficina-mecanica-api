@@ -3,6 +3,8 @@ package com.postech.oficinamecanica.interfaces.rest.vehicle;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.postech.oficinamecanica.application.vehicle.ChangeVehicleStatusCommand;
 import com.postech.oficinamecanica.application.vehicle.ChangeVehicleStatusUseCase;
+import com.postech.oficinamecanica.application.vehicle.TransferVehicleOwnershipCommand;
+import com.postech.oficinamecanica.application.vehicle.TransferVehicleOwnershipUseCase;
 import com.postech.oficinamecanica.application.vehicle.CreateVehicleCommand;
 import com.postech.oficinamecanica.application.vehicle.CreateVehicleUseCase;
 import com.postech.oficinamecanica.application.vehicle.GetVehicleUseCase;
@@ -27,6 +29,7 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -56,6 +59,9 @@ class VehicleControllerTest {
 
     @MockitoBean
     private ChangeVehicleStatusUseCase changeVehicleStatusUseCase;
+
+    @MockitoBean
+    private TransferVehicleOwnershipUseCase transferVehicleOwnershipUseCase;
 
     @MockitoBean
     private VehicleRestMapper mapper;
@@ -256,5 +262,30 @@ class VehicleControllerTest {
 
     private static VehicleResponse aResponse(String status) {
         return new VehicleResponse(1L, 1L, "Toyota", "Corolla", "ABC-1234", 2021, status, Instant.now(), Instant.now());
+    }
+
+    @Test
+    void shouldTransferVehicleToTheSecondOwner() throws Exception {
+        Vehicle vehicle = aVehicle(EntityStatus.ACTIVE);
+        VehicleResponse response = aResponse("ACTIVE");
+        when(transferVehicleOwnershipUseCase.execute(
+                new TransferVehicleOwnershipCommand(1L, "111.444.777-35", 1L))).thenReturn(vehicle);
+        when(mapper.toResponse(vehicle)).thenReturn(response);
+
+        mockMvc.perform(patch("/api/vehicles/1/owner")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"newOwnerDocument\":\"111.444.777-35\",\"employeeId\":1}"))
+            .andExpect(status().isOk());
+
+        verify(transferVehicleOwnershipUseCase)
+            .execute(new TransferVehicleOwnershipCommand(1L, "111.444.777-35", 1L));
+    }
+
+    @Test
+    void shouldRejectOwnerTransferWithoutDocument() throws Exception {
+        mockMvc.perform(patch("/api/vehicles/1/owner")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"newOwnerDocument\":\"\",\"employeeId\":1}"))
+            .andExpect(status().isBadRequest());
     }
 }

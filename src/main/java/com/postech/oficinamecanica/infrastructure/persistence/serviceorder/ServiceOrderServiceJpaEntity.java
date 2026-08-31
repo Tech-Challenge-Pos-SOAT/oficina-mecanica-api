@@ -30,6 +30,9 @@ public class ServiceOrderServiceJpaEntity {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal price;
 
+    @Column(nullable = false)
+    private boolean approved;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -38,10 +41,12 @@ public class ServiceOrderServiceJpaEntity {
 
     public ServiceOrderServiceJpaEntity() {}
 
-    public ServiceOrderServiceJpaEntity(Long id, Long serviceId, BigDecimal price, Instant createdAt, Instant updatedAt) {
+    public ServiceOrderServiceJpaEntity(Long id, Long serviceId, BigDecimal price, boolean approved,
+                                        Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.serviceId = serviceId;
         this.price = price;
+        this.approved = approved;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
     }
@@ -49,6 +54,7 @@ public class ServiceOrderServiceJpaEntity {
     public Long getId() { return id; }
     public Long getServiceId() { return serviceId; }
     public BigDecimal getPrice() { return price; }
+    public boolean isApproved() { return approved; }
     public Instant getCreatedAt() { return createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public ServiceOrderJpaEntity getServiceOrder() { return serviceOrder; }

@@ -7,6 +7,7 @@ import com.postech.oficinamecanica.domain.serviceorder.ServiceOrderAccessDeniedE
 import com.postech.oficinamecanica.domain.serviceorder.ServiceOrderNotFoundException;
 import com.postech.oficinamecanica.domain.serviceorder.ServiceOrderNotOpenForItemsException;
 import com.postech.oficinamecanica.domain.serviceorder.VehicleNotOwnedByCustomerException;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,7 @@ import com.postech.oficinamecanica.domain.vehicle.VehicleNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import com.postech.oficinamecanica.interfaces.rest.auth.AuthErrorResponse;
@@ -64,9 +66,51 @@ public class GlobalExceptionHandler {
         return respond("VALIDATION_ERROR", message, HttpStatus.BAD_REQUEST);
     }
 
+    /**
+     * Antes este handler respondia "Status deve ser ACTIVE ou INACTIVE" para
+     * QUALQUER IllegalArgumentException da aplicacao, escondendo a causa real
+     * (foi assim que uma falha de compilacao sem -parameters em
+     * GET /api/customers/document virou "status invalido").
+     *
+     * Agora a resposta de status so e' usada quando a requisicao realmente
+     * trata de status, decidido pela propria requisicao e nao pelo texto da
+     * excecao - os use cases de status lancam IllegalArgumentException sem
+     * mensagem em varios pontos, entao o texto nao e' um sinal confiavel:
+     *   - a URI termina em /status  (PATCH /api/services/{id}/status)
+     *   - ou existe um parametro status (GET /api/materials?status=ARCHIVED)
+     *   - ou a mensagem cita um enum de status
+     * Qualquer outra IllegalArgumentException devolve INVALID_ARGUMENT com a
+     * causa real preservada.
+     */
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidStatus(IllegalArgumentException e) {
-        return respond("INVALID_STATUS", "Status deve ser ACTIVE ou INACTIVE", HttpStatus.BAD_REQUEST);
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException e,
+                                                               HttpServletRequest request) {
+        String message = e.getMessage() == null ? "Parametro invalido" : e.getMessage();
+        log.warn("IllegalArgumentException tratada: {}", message);
+
+        if (isStatusRelated(message, request)) {
+            return respond("INVALID_STATUS", "Status deve ser ACTIVE ou INACTIVE", HttpStatus.BAD_REQUEST);
+        }
+        return respond("INVALID_ARGUMENT", message, HttpStatus.BAD_REQUEST);
+    }
+
+    private boolean isStatusRelated(String message, HttpServletRequest request) {
+        if (message.contains("EntityStatus") || message.contains("ServiceOrderStatus")) {
+            return true;
+        }
+        if (request == null) {
+            return false;
+        }
+        String uri = request.getRequestURI();
+        return (uri != null && uri.endsWith("/status")) || request.getParameter("status") != null;
+    }
+
+    // Parametro de query obrigatorio ausente cai em 400 com o nome do parametro,
+    // em vez de 500 no handler generico.
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public ResponseEntity<ErrorResponse> handleMissingParameter(MissingServletRequestParameterException e) {
+        return respond("MISSING_PARAMETER",
+            "Parametro obrigatorio ausente: " + e.getParameterName(), HttpStatus.BAD_REQUEST);
     }
 
     // ---- Auth ----

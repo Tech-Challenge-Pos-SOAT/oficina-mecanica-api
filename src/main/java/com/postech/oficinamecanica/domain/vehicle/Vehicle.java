@@ -5,7 +5,7 @@ import java.time.Instant;
 
 public class Vehicle {
     private final Long id;
-    private final Long customerId;
+    private Long customerId;
     private Plate plate;
     private String brand;
     private String model;
@@ -45,6 +45,19 @@ public class Vehicle {
             throw new VehicleAlreadyInactiveException(id);
         }
         this.status = EntityStatus.INACTIVE;
+        this.updatedAt = Instant.now();
+    }
+
+    /**
+     * Troca de dono. A OS ja aberta continua apontando para o dono da epoca,
+     * porque ela copia o customerId no momento da abertura - por isso a
+     * transferencia aqui nao mexe em ordem nenhuma.
+     */
+    public void transferTo(Long newCustomerId) {
+        if (newCustomerId == null) {
+            throw new IllegalArgumentException("newCustomerId");
+        }
+        this.customerId = newCustomerId;
         this.updatedAt = Instant.now();
     }
 
