@@ -256,7 +256,7 @@ jobs:
             -Dsonar.token=${{ secrets.SONAR_TOKEN }} \
             -Dsonar.projectKey=${{ steps.sonar_project.outputs.key }} \
             -Dsonar.externalIssuesReportPaths=external-reports/sonar-external-issues.json \
-            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.wait=false
         # "clean" aqui e importante: runner self-hosted REUTILIZA a mesma
         #   pasta de trabalho (_work) entre execucoes (ao contrario dos
         #   runners do GitHub, que sao uma maquina nova a cada job) - sem
@@ -284,6 +284,27 @@ jobs:
         #   (usar sonar.token, sonar.login esta descontinuado desde o
         #   SonarQube/Scanner 10.x).
         # Cadastrar os dois em Settings > Secrets and variables > Actions.
+
+        # sonar.qualitygate.wait=false (decisao do time): o job NAO falha
+        #   mais so porque a Quality Gate reprovou (ex.: "New issues" = 284
+        #   quando o limite configurado no gate e 0, mesmo com
+        #   cobertura/duplicacao/security em dia). O scan continua rodando
+        #   normalmente e o resultado real continua indo pro dashboard do
+        #   SonarQube - so paramos de bloquear o merge por causa disso. O
+        #   status da gate fica visivel no resumo do job (step seguinte),
+        #   sem precisar abrir o SonarQube pra saber se piorou.
+
+      - name: Publicar status da Quality Gate no resumo do job (nao bloqueia)
+        if: always()
+        run: |
+          python3 .github/scripts/report_quality_gate.py \
+            --host "${{ secrets.SONAR_HOST_URL }}" \
+            --token "${{ secrets.SONAR_TOKEN }}" \
+            --project-key "${{ steps.sonar_project.outputs.key }}" \
+            >> "$GITHUB_STEP_SUMMARY"
+        # "if: always()" garante que o resumo aparece mesmo se o step do scan
+        #   tiver dado warning; o script em si nunca derruba o job (sempre
+        #   sys.exit(0), mesmo se a API do Sonar estiver fora do ar).
 
   vulnerability-report:
     name: "7. Relatorio final de vulnerabilidades"
