@@ -33,8 +33,19 @@ import urllib.request
 from base64 import b64encode
 
 
+def normalize_host(host):
+    """Remove espacos/quebras de linha acidentais (ex: secret do GitHub
+    salvo com um '\n' no final) e garante que a URL tenha esquema
+    (http/https), senao o link vira relativo no markdown do Actions e o
+    GitHub tenta resolver contra a propria pagina do run (gerando 404)."""
+    host = host.strip().rstrip("/")
+    if not host.startswith(("http://", "https://")):
+        host = f"http://{host}"
+    return host
+
+
 def fetch_quality_gate_status(host, token, project_key):
-    url = f"{host.rstrip('/')}/api/qualitygates/project_status?projectKey={project_key}"
+    url = f"{host}/api/qualitygates/project_status?projectKey={project_key}"
     auth = b64encode(f"{token}:".encode("utf-8")).decode("ascii")
     req = urllib.request.Request(url, headers={"Authorization": f"Basic {auth}"})
     with urllib.request.urlopen(req, timeout=20) as resp:
@@ -44,7 +55,7 @@ def fetch_quality_gate_status(host, token, project_key):
 def build_summary(data, host, project_key):
     status = data["projectStatus"]["status"]  # OK | ERROR | WARN | NONE
     conditions = data["projectStatus"].get("conditions", [])
-    dashboard_url = f"{host.rstrip('/')}/dashboard?id={project_key}"
+    dashboard_url = f"{host}/dashboard?id={project_key}"
 
     icon = "✅" if status == "OK" else "⚠️"
     lines = [f"## {icon} SonarQube Quality Gate: {status}", ""]
@@ -53,6 +64,10 @@ def build_summary(data, host, project_key):
         "(decisao do time) - o status abaixo e so informativo. Ver detalhes "
         f"completos no [dashboard do SonarQube]({dashboard_url})._"
     )
+    # Link em texto puro tambem, caso o markdown do link acima seja
+    # renderizado como relativo por algum motivo (proxy, secret malformado,
+    # etc.) - assim sempre da pra copiar/colar a URL absoluta.
+    lines.append(f"Link direto: {dashboard_url}")
     lines.append("")
 
     failed = [c for c in conditions if c.get("status") == "ERROR"]
@@ -79,16 +94,18 @@ def main():
     parser.add_argument("--project-key", required=True)
     args = parser.parse_args()
 
+    host = normalize_host(args.host)
+
     try:
-        data = fetch_quality_gate_status(args.host, args.token, args.project_key)
-        print(build_summary(data, args.host, args.project_key))
+        data = fetch_quality_gate_status(host, args.token, args.project_key)
+        print(build_summary(data, host, args.project_key))
     except (urllib.error.URLError, KeyError, json.JSONDecodeError, TimeoutError) as e:
         # Nao falha o job por causa disso - so avisa que o resumo nao pode
         # ser gerado desta vez (rede fora, instancia reiniciando, etc.).
         print(
             "## ⚠️ SonarQube Quality Gate\n\n"
             f"Nao foi possivel consultar o status via API neste run ({e}). "
-            f"Ver o dashboard diretamente: {args.host.rstrip('/')}/dashboard?id={args.project_key}\n"
+            f"Ver o dashboard diretamente: {host}/dashboard?id={args.project_key}\n"
         )
         print(f"Aviso: falha ao consultar Quality Gate API: {e}", file=sys.stderr)
 
