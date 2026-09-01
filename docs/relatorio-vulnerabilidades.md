@@ -2,9 +2,9 @@
 
 Gerado automaticamente pelo pipeline de CI (GitHub Actions) a cada push na `main`. Nao editar manualmente - o proximo push sobrescreve este arquivo.
 
-- **Gerado em:** 2026-08-31 23:24 UTC
-- **Commit analisado:** `9504491`
-- **Execucao do workflow:** https://github.com/Tech-Challenge-Pos-SOAT/oficina-mecanica-api/actions/runs/33450083114
+- **Gerado em:** 2026-09-01 01:21 UTC
+- **Commit analisado:** `c797b9f`
+- **Execucao do workflow:** https://github.com/Tech-Challenge-Pos-SOAT/oficina-mecanica-api/actions/runs/33457976233
 
 ## 1. Dependencias (OWASP Dependency-Check)
 
