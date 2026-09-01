@@ -84,6 +84,22 @@ jobs:
       - name: Test + cobertura (JaCoCo)
         run: mvn -B test
 
+      - name: Publicar cobertura de testes no resumo do job
+        if: always()
+        run: |
+          python3 .github/scripts/report_coverage.py \
+            --jacoco-xml target/site/jacoco/jacoco.xml \
+            --min-coverage 80 \
+            >> "$GITHUB_STEP_SUMMARY"
+        # "if: always()" garante que o resumo aparece mesmo se algum teste
+        #   tiver falhado (o XML do JaCoCo so nao existe se o "mvn test"
+        #   quebrar antes de gerar relatorio nenhum - o script trata isso
+        #   sem derrubar o job, igual ao report_quality_gate.py do job 6).
+        # Cobertura aqui e do PROJETO INTEIRO (visao rapida no resumo) - o
+        #   detalhamento por pacote/dominio critico fica no artifact
+        #   "jacoco-report" (upload abaixo) ou local em
+        #   target/site/jacoco/index.html apos "mvn test".
+
       - name: Upload relatorio de cobertura (JaCoCo)
         if: always()
         uses: actions/upload-artifact@v4
