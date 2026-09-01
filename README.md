@@ -1,88 +1,63 @@
 # Oficina Mecanica API
 
-MVP do back-end de um Sistema Integrado de Atendimento e Execucao de Servicos
-para uma oficina mecanica de medio porte, desenvolvido para o **Tech Challenge -
-Fase 1** (Pos-Graduacao em Arquitetura de Software, POSTECH/FIAP).
+MVP do back-end de um Sistema Integrado de Atendimento e Execucao de Servicos,
+modelado com Domain-Driven Design (DDD) em monolito em camadas.
 
-Aplica Domain-Driven Design (DDD) na modelagem, com boas praticas de Qualidade
-de Software e Seguranca.
+## Motivacao
+
+Uma oficina mecanica de medio porte, especializada em manutencao de veiculos,
+tem enfrentado desafios para expandir seus servicos com qualidade e eficiencia.
+Atualmente, o processo de atendimento, diagnostico, execucao de servicos e
+entrega dos veiculos e feito de forma desorganizada, utilizando anotacoes manuais
+e planilhas, o que gera problemas como:
+
+- Erros na priorizacao dos atendimentos;
+- Falhas no controle de pecas e insumos;
+- Dificuldade em acompanhar o status dos servicos;
+- Perda de historico de clientes e veiculos;
+- Ineficiencia no fluxo de orcamentos e autorizacoes.
+
+Diante disso, a oficina decidiu investir no sistema, que permitira aos clientes
+acompanhar em tempo real o andamento do servico, autorizar reparos adicionais via
+aplicativo e garantir uma gestao interna eficiente e segura.
 
 ## Stack
 
-- Java 21
-- Spring Boot 3.5.x (Web, Data JPA, Security, Validation, Actuator)
-- PostgreSQL 16
-- JWT (io.jsonwebtoken) para autenticacao das APIs administrativas
-- springdoc-openapi (Swagger) para documentacao das APIs
-- JUnit 5, Mockito, REST-assured e Testcontainers para testes
+- Java 21, Spring Boot 3.5.x (Web, Data JPA, Security, Validation, Actuator)
+- PostgreSQL 16 (schema via Flyway, `ddl-auto=validate`)
+- JWT para autenticacao das APIs administrativas
+- springdoc-openapi (Swagger), MapStruct (mapeamento entre camadas)
+- JUnit 5, Mockito, REST-assured e Testcontainers (Postgres real)
 - Docker / docker-compose
-
-## Justificativa do banco de dados
-
-**Decisao: PostgreSQL** (relacional), acessado via Spring Data JPA.
-
-Motivos principais:
-
-- Dominio fortemente relacional: Cliente 1-N Veiculo, OS N-N Servico, OS N-N
-  Peca (com quantidade/valor no orcamento).
-- ACID + locking a nivel de linha (`SELECT ... FOR UPDATE`), necessario para
-  reservar/baixar estoque de peca sem condicao de corrida quando mais de uma
-  OS concorre pela mesma peca.
-- Constraints (`CHECK`/`UNIQUE`) como camada extra de validacao para
-  CPF/CNPJ e placa, alem da validacao na aplicacao.
-- Ecossistema maduro com Spring Data JPA e com Testcontainers
-  (`org.testcontainers:postgresql`) para testes de integracao com banco real,
-  evitando divergencias de comportamento do H2 em memoria.
-- Gratuito, open-source, sem custo de licenciamento.
-- Suporte nativo a `TIMESTAMPTZ`, util para metricas de tempo de execucao da
-  OS no relatorio final.
-
-Alternativas consideradas e descartadas: MySQL (Postgres tem locking/tipos
-mais robustos para o cenario de concorrencia no estoque), MongoDB (dominio
-muito relacional para justificar um banco de documentos), H2 (mantido so
-para testes isolados, nunca como banco de desenvolvimento/producao).
-
-Justificativa completa e alternativas detalhadas em
-[`docs/context/03-decisao-banco-de-dados.md`](docs/context/03-decisao-banco-de-dados.md).
 
 ## Arquitetura
 
-Monolito organizado em camadas, seguindo os principios taticos de DDD:
+Fluxo: Controller → UseCase → Domain + Repository (porta) → Impl JPA.
 
 ```
 com.postech.oficinamecanica
-├── domain            # entidades, agregados, regras de negocio (sem dependencia de framework)
-│   ├── auth
-│   ├── customer        # equivalente a "cliente"
-│   ├── employee         # equivalente a "usuario/funcionario"
-│   ├── material          # equivalente a "peca"
-│   ├── materialtransaction
-│   ├── service             # equivalente a "servico"
-│   ├── serviceorder         # equivalente a "ordemservico" - agregado central (subdominio principal)
-│   └── vehicle                # equivalente a "veiculo"
-├── application        # casos de uso / orquestracao
-├── infrastructure      # persistencia JPA, seguranca (JWT), configuracoes
-└── interfaces           # controllers REST, DTOs
+├── domain            # entidades, agregados, regras de negocio (sem Spring/JPA)
+├── application       # casos de uso + interfaces de repositorio
+├── infrastructure    # persistencia JPA, seguranca (JWT), configuracoes
+└── interfaces        # controllers REST e DTOs (record)
 ```
 
-## Como rodar localmente
+Entidades de dominio: `Customer`, `Vehicle`, `Material`, `Service`, `Employee` e
+o agregado central `ServiceOrder` (com `ServiceOrderHistory`) + `MaterialTransaction`.
 
-Pre-requisitos: Docker e Docker Compose.
+## Como rodar
+
+Pre-requisitos: Docker, Docker Compose, **Java 21** e **Maven do sistema**
+(o repo NAO tem wrapper `mvnw`).
 
 ```bash
-docker compose up --build
+docker compose up --build        # sobe app + Postgres
+mvn spring-boot:run              # app sem Docker, sobe o banco via spring-boot-docker-compose
 ```
 
-A API sobe em `http://localhost:8080`, o Swagger UI em
-`http://localhost:8080/swagger-ui.html`, e o Postgres em `localhost:5432`
-(usuario/senha: `oficina`/`oficina`, banco `oficina_mecanica`).
-
-Para rodar sem Docker (usando um Postgres local ou via `spring-boot-docker-compose`,
-que ja sobe o banco automaticamente em modo dev):
-
-```bash
-mvn spring-boot:run
-```
+- API: `http://localhost:8080`
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+- Postgres: `localhost:5432` (usuario/senha `oficina`/`oficina`, banco `oficina_mecanica`)
 
 ## Testes
 
@@ -90,111 +65,91 @@ mvn spring-boot:run
 mvn test
 ```
 
-Cobertura minima exigida pelo edital: 80% nos dominios criticos (relatorio
-JaCoCo gerado em `target/site/jacoco/index.html` apos `mvn test`).
+- **Docker obrigatorio:** testes JPA/HTTP sobem Postgres 16 real via Testcontainers
+  (`postgres:16-alpine`); sem Docker eles falham.
+- Cobertura minima exigida: 80% em dominios criticos (JaCoCo em
+  `../../target/site/jacoco/index.html`).
+- Nome dos testes em ingles, padrao `should<Comportamento>When<Condicao>`.
 
-## Pipeline de CI (`.github/workflows/ci.yml`)
+## Testes locais via collection do Insomnia
 
-O CI roda em ordem sequencial (cada etapa so comeca depois que a anterior
-termina) em todo PR/push para `main`:
+Para exercitar a API de ponta a ponta (fluxo completo da Ordem de Servico) sem
+escrever codigo, use a collection em [`../../docs/insomnia`](docs/insomnia/):
 
-1. **Check** - branch atualizada com a main (so em PR).
-2. **Build** - compila e empacota (`mvn clean package -DskipTests`).
-3. **Test** - roda os testes e gera cobertura JaCoCo.
-4. **Dependency-Check** - OWASP Dependency-Check varre as dependencias do
-   projeto (Spring Boot, driver do Postgres, JWT, etc.) contra a base de
-   CVEs da NVD.
-5. **Trivy** - varre a imagem Docker final (SO + dependencias da aplicacao)
-   em busca de vulnerabilidades conhecidas.
-6. **SonarQube** - analise de qualidade de codigo, com as vulnerabilidades
-   da etapa 4 importadas junto (ver abaixo).
+1. **Suba a API** (como acima): `docker compose up --build` ou `mvn spring-boot:run`.
+   O Flyway cria o schema e semeia os dados iniciais.
+2. **Importe a collection** no Insomnia: *Insomnia > Import > From File*,
+   selecione `../../docs/insomnia/oficina-mecanica-api.insomnia.json`. O ambiente
+   `Base Environment` ja aponta para `http://localhost:8080`.
+3. **Logue** com o funcionario inicial (criado na migration
+   `V6__seed_initial_employee.sql`):
+   - `POST /auth/login`
+   - Email: `carlos.souza@oficina.com`
+   - Senha: `senha123`
+   - Copie o `token` da resposta para a variavel de ambiente `token` — todas as
+     requisicoes `/api/*` usam Bearer com essa variavel.
+4. **Siga o roteiro** da collection: pre-requisitos (veiculo, servico) → fluxo da OS
+   (abrir, diagnostico, itens, orcamento, aprovacao, conclusao, entrega) →
+   acompanhamento do cliente (sem token) → cenarios de erro. Ajuste as variaveis
+   `orderId`, `serviceId` e `materialId` conforme avancar.
 
-Como o repositorio e privado, os relatorios de vulnerabilidade nao vao para
-a aba "Security" do GitHub (isso exigiria GitHub Advanced Security, que e
-pago em repo privado) - eles ficam disponiveis como **artifacts do
-workflow** (aba Actions > run mais recente > Artifacts):
-`dependency-check-report` (HTML/JSON) e `trivy-report` (tabela/JSON). Esses
-arquivos sao a base para o "Relatorio de vulnerabilidades" exigido nos
-entregaveis da Fase 1.
+Detalhes do roteiro, efeitos colaterais por etapa e codigos de erro em
+[`../../docs/insomnia/README.md`](docs/insomnia/README.md).
 
-Para rodar o Dependency-Check localmente:
+## Endpoints principais
+
+| Recurso | Base | Obs |
+|---|---|---|
+| Autenticacao | `POST /auth/login` | publica, gera JWT |
+| Clientes | `/api/customers` | CRUD + `PATCH /{id}/status`, `GET /document` |
+| Veiculos | `/api/vehicles` | CRUD + `PATCH /{id}/status`, `PATCH /{id}/owner` |
+| Materiais | `/api/materials` | CRUD + `GET /low-stock`, `PATCH /{id}/status`, `POST /{id}/stock-entry` |
+| Movimentacao de estoque | `/api/material-transactions`, `/api/materials/{id}/transactions` | entradas/saidas de estoque |
+| Servicos | `/api/services` | CRUD + `PATCH /{id}/status` |
+| Ordem de servico | `/api/service-orders` | diagnostico, servicos, materiais, orcamento, conclusao, cancelamento, entrega |
+| Funcionarios | `/api/employees` | CRUD + `PATCH /{id}/status` |
+
+Colecao completa de requests (importavel no Insomnia): [`../../docs/insomnia`](docs/insomnia/).
+Endpoints estruturados no Swagger ao subir a aplicacao.
+
+## Pipeline de CI (`../../.github/workflows/ci.yml`)
+
+Sequencial em todo PR/push para `main`: **check** (branch atualizada) → **build**
+→ **test** (+ JaCoCo) → **dependency-check** (OWASP/NVD) → **trivy** (imagem) →
+**sonar**. Relatorios de vulnerabilidade ficam como artifacts do workflow.
+
+Dependency-Check roda fora do ciclo Maven, de proposito; local:
 
 ```bash
 mvn org.owasp:dependency-check-maven:12.2.2:check -DnvdApiKey=SEU_TOKEN
-# token gratuito em https://nvd.nist.gov/developers/request-an-api-key
 ```
 
-## Analise de qualidade de codigo (SonarQube)
+SonarQube: Community Edition local, job roda em runner self-hosted
+(`http://sonarqube.local:9000`). Mais detalhes em `../../docs/sonarqube-local.md`.
 
-O time optou por um **SonarQube Community Edition local**, rodando via
-Docker Compose na maquina de quem configurou (mesma abordagem ja usada com
-GitLab CI). Job "6. SonarQube" no `.github/workflows/ci.yml`:
+## Arquitetura DDD e convencoes
 
-- Roda em um **runner self-hosted** (registrado na maquina onde o SonarQube
-  local esta de pe) - e o que permite o GitHub Actions, que roda na nuvem,
-  alcancar um `http://sonarqube.local:9000` que so existe naquela maquina. A
-  maquina precisa ficar ligada (com o runner e o SonarQube ativos) sempre
-  que alguem for abrir/atualizar um PR ou dar merge na main.
-- Roda **tanto em push na main quanto em Pull Request**. Duas limitacoes
-  reais da Community Edition que isso nao remove:
-  1. CE nao suporta `sonar.branch.name` (erro "Developer Edition or above
-     is required") - nao existe conceito nativo de branch dentro de um
-     projeto.
-  2. Por isso, cada PR usa um **projectKey proprio**
-     (`oficina-mecanica-api-pr-<numero>`) em vez do projectKey da main -
-     senao cada scan de PR sobrescreveria a analise da main. Na pratica,
-     cada PR vira um "projeto" separado no dashboard local do SonarQube,
-     cada um com sua propria Quality Gate.
-- Nao ha comentario/decoracao automatica no PR do GitHub (isso e recurso
-  pago, Developer Edition+) - o resultado aparece como sucesso/falha do
-  check "SonarQube" no PR e no dashboard local (`http://sonarqube.local:9000`).
-- Ainda falha o job se a Quality Gate nao passar
-  (`-Dsonar.qualitygate.wait=true`), mesmo sem comentario inline no PR.
-- **Vulnerabilidades do Dependency-Check aparecem dentro do proprio
-  dashboard do SonarQube**, junto com os problemas de qualidade de codigo.
-  Isso NAO usa o plugin da comunidade `dependency-check-sonar-plugin` (sem
-  release desde ago/2024, com bugs conhecidos em versoes recentes do
-  SonarQube) - em vez disso, o job "4. Dependency-Check" converte o
-  relatorio pro formato nativo de importacao de issues externas do
-  SonarQube (`sonar.externalIssuesReportPaths`,
-  `.github/scripts/dependency_check_to_sonar.py`) e o job "6. SonarQube"
-  baixa esse arquivo convertido e passa pro scanner.
+Codigo, identificadores e commits em ingles; docs e conversa em portugues.
+Nomes de dominio saem de `../../docs/contexts/modelo-de-dados.md`.
 
-Configuracao necessaria (feita uma vez, fora do codigo):
-
-1. Instalar e registrar um runner self-hosted na maquina com o SonarQube
-   local (GitHub > repo > Settings > Actions > Runners > New self-hosted
-   runner - o proprio GitHub gera o comando de instalacao e o token de
-   registro).
-2. No SonarQube local (`http://sonarqube.local:9000`), gerar um token em
-   *My Account > Security*.
-3. Cadastrar em Settings > Secrets and variables > Actions:
-   - `SONAR_HOST_URL` (ex.: `http://sonarqube.local:9000`)
-   - `SONAR_TOKEN` (o token gerado no passo 2 - usar `sonar.token`, nao
-     `sonar.login`, que esta descontinuado)
-
-## SonarQube local para cada dev (opcional)
-
-Alem do SonarQube usado pelo CI (secao acima, fixo na maquina do runner),
-qualquer integrante do time pode subir o **proprio** SonarQube Community
-Edition localmente, via um perfil opcional do `docker-compose.yml`, para ver
-relatorio de qualidade e re-analisar quando quiser, sem depender de ninguem:
-
-```bash
-./scripts/sonar-local.sh        # macOS/Linux/WSL - sobe, faz bootstrap e ja analisa
-.\scripts\sonar-local.ps1       # Windows (PowerShell nativo)
-```
-
-Funciona com Docker Desktop, OrbStack ou Podman, em Windows/Linux/macOS.
-Guia completo (memoria minima, troubleshooting por SO/runtime, comandos
-`up`/`analyze`/`down`/`reset`): [`docs/sonarqube-local.md`](docs/sonarqube-local.md).
+- Banco: schema so via Flyway; **mudou entidade JPA → nova migration `V<N>__desc.sql`**,
+  nunca editar migration ja aplicada.
+- Mapeamento entre camadas via MapStruct (`@Mapper(componentModel="spring",
+  unmappedTargetPolicy=ReportingPolicy.ERROR)`); DTOs sao `record`.
+- Dominio sem dependencia de framework; mocks so em portas (repository), nunca em domain.
 
 ## Documentacao
 
-- Documentacao DDD (Event Storming, Domain Storytelling, Mapa de Contexto,
-  Linguagem Ubiqua): ver link do board no Miro no documento de entrega.
-- Contexto adicional para desenvolvimento (edital, decisoes de DDD, board do
-  Trello): ver `docs/context/`.
+- Indice "tarefa → doc": [`../../docs/contexts/context-index.md`](docs/contexts/context-index.md)
+- Modelo de dados: [`../../docs/contexts/modelo-de-dados.md`](docs/contexts/modelo-de-dados.md)
+- Testes automatizados: [`../../docs/contexts/testes-automatizados.md`](docs/contexts/testes-automatizados.md)
+- SonarQube local: [`../../docs/sonarqube-local.md`](docs/sonarqube-local.md)
+- Requests (Insomnia): [`../../docs/insomnia`](docs/insomnia/README.md)
 
 ## Grupo
-- Participantes e usernames no Discord: William Bacelar, João Araújo, Alyson Guimarães, Beatriz e Kawan
+
+- Willian (Bacelar): rm375919
+- Alyson (Guimaraes): rm375812
+- Joao (Araujo): rm376123
+- Beatriz: rm376242
+- Kawan: rm376144
