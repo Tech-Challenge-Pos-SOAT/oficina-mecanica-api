@@ -147,7 +147,7 @@ class ServiceOrderTest {
         order.addMaterial(2L, 1, new BigDecimal("50.00"));
         order.submitForApproval(EMPLOYEE_ID);
         order.approveBudget();
-        order.markStockDebited();
+        order.markCycleApproved();
 
         order.addMaterial(3L, 2, new BigDecimal("30.00"));
         order.submitForApproval(EMPLOYEE_ID);
@@ -169,5 +169,93 @@ class ServiceOrderTest {
 
         assertThatThrownBy(() -> services.add(ServiceOrderService.of(9L, BigDecimal.ONE)))
             .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void shouldCancelOrderAndKeepReasonInHistory() {
+        ServiceOrder order = anOrderInDiagnosis();
+        order.addService(1L, new BigDecimal("100.00"));
+
+        order.cancel(AuthorType.EMPLOYEE, EMPLOYEE_ID, "Cliente desistiu");
+
+        ServiceOrderHistory last = order.getHistory().get(order.getHistory().size() - 1);
+        assertThat(order.getStatus()).isEqualTo(ServiceOrderStatus.CANCELLED);
+        assertThat(last.getObservation()).isEqualTo("Cliente desistiu");
+        assertThat(last.getAuthorType()).isEqualTo(AuthorType.EMPLOYEE);
+    }
+
+    @Test
+    void shouldCancelBySystemWhenOrderWasNeverExecuted() {
+        ServiceOrder order = anOrderInDiagnosis();
+        order.addMaterial(2L, 1, new BigDecimal("50.00"));
+        order.submitForApproval(EMPLOYEE_ID);
+
+        order.cancelBySystem("Peca 2 sem saldo");
+
+        assertThat(order.getStatus()).isEqualTo(ServiceOrderStatus.CANCELLED);
+        assertThat(order.getHistory().get(order.getHistory().size() - 1).getAuthorType())
+            .isEqualTo(AuthorType.SYSTEM);
+    }
+
+    @Test
+    void shouldDropOnlyTheAdditionalRepairWhenSystemCancelsAnExecutingOrder() {
+        ServiceOrder order = anExecutingOrderWithAdditionalRepairPending();
+
+        order.cancelBySystem("Orcamento sem resposta do cliente em 7 dias");
+
+        assertThat(order.getStatus()).isEqualTo(ServiceOrderStatus.IN_EXECUTION);
+        assertThat(order.getMaterials()).hasSize(1);
+        assertThat(order.getMaterials().get(0).getMaterialId()).isEqualTo(2L);
+        assertThat(order.getServices()).isEmpty();
+        assertThat(order.getPrice()).isEqualByComparingTo(new BigDecimal("50.00"));
+    }
+
+    @Test
+    void shouldDropOnlyTheAdditionalRepairWhenCustomerRejectsIt() {
+        ServiceOrder order = anExecutingOrderWithAdditionalRepairPending();
+
+        order.rejectBudget("Nao quero o servico extra");
+
+        ServiceOrderHistory last = order.getHistory().get(order.getHistory().size() - 1);
+        assertThat(order.getStatus()).isEqualTo(ServiceOrderStatus.IN_EXECUTION);
+        assertThat(last.getAuthorType()).isEqualTo(AuthorType.CUSTOMER);
+        assertThat(last.getObservation()).isEqualTo("Nao quero o servico extra");
+        assertThat(order.getPrice()).isEqualByComparingTo(new BigDecimal("50.00"));
+    }
+
+    @Test
+    void shouldStillFinishTheOrderWhenTheFirstBudgetIsRejected() {
+        ServiceOrder order = anOrderInDiagnosis();
+        order.addService(1L, new BigDecimal("100.00"));
+        order.submitForApproval(EMPLOYEE_ID);
+
+        order.rejectBudget("Preco alto");
+
+        assertThat(order.getStatus()).isEqualTo(ServiceOrderStatus.FINISHED);
+    }
+
+    @Test
+    void shouldExposeWhenTheBudgetWasSentToTheCustomer() {
+        ServiceOrder order = anOrderInDiagnosis();
+        assertThat(order.awaitingApprovalSince()).isNull();
+
+        order.addService(1L, new BigDecimal("100.00"));
+        order.submitForApproval(EMPLOYEE_ID);
+
+        assertThat(order.awaitingApprovalSince()).isNotNull();
+    }
+
+    /** Ordem com um ciclo ja aprovado (peca 2) e um reparo adicional pendente (peca 3 + servico). */
+    private ServiceOrder anExecutingOrderWithAdditionalRepairPending() {
+        ServiceOrder order = anOrderInDiagnosis();
+        order.addMaterial(2L, 1, new BigDecimal("50.00"));
+        order.submitForApproval(EMPLOYEE_ID);
+        order.approveBudget();
+        order.markCycleApproved();
+
+        order.addMaterial(3L, 2, new BigDecimal("30.00"));
+        order.addService(9L, new BigDecimal("80.00"));
+        order.submitForApproval(EMPLOYEE_ID);
+        return order;
     }
 }

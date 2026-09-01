@@ -1,6 +1,8 @@
 package com.postech.oficinamecanica.interfaces.rest.serviceorder;
 
 import com.postech.oficinamecanica.application.serviceorder.AddMaterialToServiceOrderUseCase;
+import com.postech.oficinamecanica.application.serviceorder.CancelServiceOrderUseCase;
+import com.postech.oficinamecanica.application.serviceorder.ExpireServiceOrderBudgetsUseCase;
 import com.postech.oficinamecanica.application.serviceorder.AddServiceToServiceOrderUseCase;
 import com.postech.oficinamecanica.application.serviceorder.DeliverServiceOrderUseCase;
 import com.postech.oficinamecanica.application.serviceorder.FinishServiceOrderUseCase;
@@ -44,6 +46,8 @@ class ServiceOrderControllerTest {
     @MockitoBean private DeliverServiceOrderUseCase deliverServiceOrderUseCase;
     @MockitoBean private GetServiceOrderUseCase getServiceOrderUseCase;
     @MockitoBean private ListServiceOrdersUseCase listServiceOrdersUseCase;
+    @MockitoBean private CancelServiceOrderUseCase cancelServiceOrderUseCase;
+    @MockitoBean private ExpireServiceOrderBudgetsUseCase expireServiceOrderBudgetsUseCase;
     @MockitoBean private ServiceOrderRestMapper mapper;
 
     private ServiceOrder anOrder() {
@@ -132,5 +136,43 @@ class ServiceOrderControllerTest {
             .andExpect(jsonPath("$[0].status").value("IN_EXECUTION"));
 
         verify(listServiceOrdersUseCase).execute("IN_EXECUTION");
+    }
+
+    @Test
+    void shouldCancelServiceOrder() throws Exception {
+        ServiceOrder order = anOrder();
+        when(cancelServiceOrderUseCase.execute(1L, 1L, "Cliente desistiu")).thenReturn(order);
+        when(mapper.toResponse(order)).thenReturn(aResponse("CANCELLED"));
+
+        mockMvc.perform(post("/api/service-orders/1/cancellation")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"employeeId\":1,\"reason\":\"Cliente desistiu\"}"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.status").value("CANCELLED"));
+
+        verify(cancelServiceOrderUseCase).execute(1L, 1L, "Cliente desistiu");
+    }
+
+    @Test
+    void shouldRejectCancellationWithoutReason() throws Exception {
+        mockMvc.perform(post("/api/service-orders/1/cancellation")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"employeeId\":1,\"reason\":\"\"}"))
+            .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(cancelServiceOrderUseCase);
+    }
+
+    @Test
+    void shouldRunTheBudgetExpirationCheckOnDemand() throws Exception {
+        ServiceOrder order = anOrder();
+        when(expireServiceOrderBudgetsUseCase.execute()).thenReturn(List.of(order));
+        when(mapper.toResponse(order)).thenReturn(aResponse("CANCELLED"));
+
+        mockMvc.perform(post("/api/service-orders/expiration-check"))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$[0].status").value("CANCELLED"));
+
+        verify(expireServiceOrderBudgetsUseCase).execute();
     }
 }

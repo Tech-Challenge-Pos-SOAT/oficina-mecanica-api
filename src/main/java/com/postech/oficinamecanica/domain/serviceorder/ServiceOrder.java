@@ -85,8 +85,41 @@ public class ServiceOrder {
         transitionTo(ServiceOrderStatus.IN_EXECUTION, AuthorType.CUSTOMER, customerId, null);
     }
 
+    /**
+     * Recusa do cliente. Se a ordem ja esteve em execucao, o que esta sendo
+     * recusado e' um reparo adicional: os itens ainda nao aprovados sao
+     * descartados, o orcamento volta ao valor anterior e a ordem retoma a
+     * execucao do que ja tinha sido autorizado. So a recusa do primeiro
+     * orcamento encerra a ordem.
+     */
     public void rejectBudget(String reason) {
+        if (hasBeenExecuted()) {
+            discardPendingItems();
+            transitionTo(ServiceOrderStatus.IN_EXECUTION, AuthorType.CUSTOMER, customerId, reason);
+            return;
+        }
         transitionTo(ServiceOrderStatus.FINISHED, AuthorType.CUSTOMER, customerId, reason);
+    }
+
+    /**
+     * Vencimento do prazo de resposta e impedimento na aprovacao (peca sem
+     * saldo, servico fora do catalogo) seguem a mesma regra da recusa: se a
+     * ordem ja esteve em execucao, so o reparo adicional cai; se nunca esteve,
+     * a ordem inteira e' cancelada. Autor SYSTEM.
+     */
+    public void cancelBySystem(String reason) {
+        if (hasBeenExecuted()) {
+            discardPendingItems();
+            transitionTo(ServiceOrderStatus.IN_EXECUTION, AuthorType.SYSTEM, null, reason);
+            return;
+        }
+        transitionTo(ServiceOrderStatus.CANCELLED, AuthorType.SYSTEM, null, reason);
+    }
+
+
+    /** Encerramento sem execucao: falta de peca, servico fora do catalogo, prazo vencido. */
+    public void cancel(AuthorType authorType, Long authorId, String reason) {
+        transitionTo(ServiceOrderStatus.CANCELLED, authorType, authorId, reason);
     }
 
     public void finish(Long employeeId, String observation) {
@@ -102,9 +135,43 @@ public class ServiceOrder {
         return materials.stream().filter(material -> !material.isStockDebited()).toList();
     }
 
-    public void markStockDebited() {
+    /** Materiais que ja sairam do estoque - os que precisam voltar num cancelamento. */
+    public List<ServiceOrderMaterial> debitedMaterials() {
+        return materials.stream().filter(ServiceOrderMaterial::isStockDebited).toList();
+    }
+
+    /** Fecha o ciclo aprovado: peca com baixa dada, servico autorizado. */
+    public void markCycleApproved() {
         materials.forEach(ServiceOrderMaterial::markStockDebited);
+        services.forEach(ServiceOrderService::markApproved);
         this.updatedAt = Instant.now();
+    }
+
+    public void markStockReturned() {
+        materials.forEach(ServiceOrderMaterial::markStockReturned);
+        this.updatedAt = Instant.now();
+    }
+
+    /** A ordem ja teve pelo menos um orcamento aprovado. */
+    public boolean hasBeenExecuted() {
+        return history.stream().anyMatch(entry -> entry.getStatus() == ServiceOrderStatus.IN_EXECUTION);
+    }
+
+    /** Momento em que o orcamento atual foi enviado ao cliente. */
+    public Instant awaitingApprovalSince() {
+        Instant since = null;
+        for (ServiceOrderHistory entry : history) {
+            if (entry.getStatus() == ServiceOrderStatus.AWAITING_APPROVAL) {
+                since = entry.getCreatedAt();
+            }
+        }
+        return since;
+    }
+
+    private void discardPendingItems() {
+        materials.removeIf(material -> !material.isStockDebited());
+        services.removeIf(service -> !service.isApproved());
+        recalculateBudget();
     }
 
     private void recalculateBudget() {

@@ -63,8 +63,22 @@ Oficina mecânica de médio porte. Fluxo: atendente abre `ServiceOrder` → mec�
 | Em execução | `IN_EXECUTION` | Serviços sendo realizados pelo mecânico |
 | Finalizada | `FINISHED` | Atendimento encerrado (conclusão, recusa ou impossibilidade) |
 | Entregue | `DELIVERED` | Veículo retirado pelo cliente |
+| Cancelada | `CANCELLED` | Encerrada sem execução: peça sem saldo, serviço fora do catálogo ou orçamento vencido sem resposta |
 
-> Status `FINISHED` é genérico: representa conclusão normal, recusa do cliente ou impossibilidade de execução. O motivo é registrado no campo observação do histórico.
+> Status `FINISHED` é genérico: representa conclusão normal ou recusa do primeiro orçamento. O motivo é registrado no campo observação do histórico.
+>
+> `CANCELLED` é diferente: a oficina **não conseguiu** executar. Só é alcançável de `RECEIVED`, `IN_DIAGNOSIS`, `AWAITING_APPROVAL` (regras automáticas ou cancelamento manual) e de `IN_EXECUTION` **apenas pelo cancelamento manual do funcionário**, que devolve ao estoque as peças já baixadas.
+
+### Regras de encerramento automático
+
+| Gatilho | OS nunca executada | OS já em execução (reparo adicional) |
+|---|---|---|
+| Peça sem saldo na aprovação | `CANCELLED` | descarta o adicional e volta para `IN_EXECUTION` |
+| Serviço inativado no catálogo | `CANCELLED` | descarta o adicional e volta para `IN_EXECUTION` |
+| 7 dias sem resposta do cliente | `CANCELLED` (autor `SYSTEM`) | descarta o adicional e volta para `IN_EXECUTION` |
+| Recusa do cliente | `FINISHED` | descarta o adicional e volta para `IN_EXECUTION` |
+
+O princípio é único: **trabalho já aprovado pelo cliente nunca é jogado fora**. O prazo é configurável em `serviceorder.budget-approval-deadline-days` (padrão 7) e a varredura roda diariamente às 03:00.
 
 ### Estoque e Movimentações
 
@@ -225,5 +239,5 @@ Transição inválida = exceção de domínio (não `false`, não validação na
 Pergunte ao usuário se a tarefa esbarrar em algum:
 
 1. **Reserva de material não existe no schema** (só `MaterialTransaction` IN/OUT). Confirmar descarte (MVP) ou se precisa entrar.
-2. **Recusa total vs. parcial?** Total encerra, parcial retira itens e volta `IN_EXECUTION`, registrada em `ServiceOrderHistory`. Confirmar implementação.
+2. ~~**Recusa total vs. parcial?**~~ **Resolvido**: recusa do primeiro orçamento encerra (`FINISHED`); recusa de reparo adicional descarta os itens não aprovados e volta para `IN_EXECUTION`.
 3. Perguntas `?` nos comentários do schema (ver `modelo-de-dados.md`)

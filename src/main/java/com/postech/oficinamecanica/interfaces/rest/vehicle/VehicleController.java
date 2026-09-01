@@ -1,6 +1,8 @@
 package com.postech.oficinamecanica.interfaces.rest.vehicle;
 
 import com.postech.oficinamecanica.application.vehicle.ChangeVehicleStatusUseCase;
+import com.postech.oficinamecanica.application.vehicle.TransferVehicleOwnershipCommand;
+import com.postech.oficinamecanica.application.vehicle.TransferVehicleOwnershipUseCase;
 import com.postech.oficinamecanica.application.vehicle.CreateVehicleUseCase;
 import com.postech.oficinamecanica.application.vehicle.GetVehicleUseCase;
 import com.postech.oficinamecanica.application.vehicle.ListVehiclesUseCase;
@@ -38,6 +40,7 @@ public class VehicleController {
     private final GetVehicleUseCase getVehicleUseCase;
     private final ListVehiclesUseCase listVehiclesUseCase;
     private final ChangeVehicleStatusUseCase changeVehicleStatusUseCase;
+    private final TransferVehicleOwnershipUseCase transferVehicleOwnershipUseCase;
     private final VehicleRestMapper mapper;
 
     public VehicleController(
@@ -46,6 +49,7 @@ public class VehicleController {
         GetVehicleUseCase getVehicleUseCase,
         ListVehiclesUseCase listVehiclesUseCase,
         ChangeVehicleStatusUseCase changeVehicleStatusUseCase,
+        TransferVehicleOwnershipUseCase transferVehicleOwnershipUseCase,
         VehicleRestMapper mapper
     ) {
         this.createVehicleUseCase = createVehicleUseCase;
@@ -53,6 +57,7 @@ public class VehicleController {
         this.getVehicleUseCase = getVehicleUseCase;
         this.listVehiclesUseCase = listVehiclesUseCase;
         this.changeVehicleStatusUseCase = changeVehicleStatusUseCase;
+        this.transferVehicleOwnershipUseCase = transferVehicleOwnershipUseCase;
         this.mapper = mapper;
     }
 
@@ -165,6 +170,19 @@ public class VehicleController {
         @Valid @RequestBody ChangeVehicleStatusRequest request
     ) {
         Vehicle vehicle = changeVehicleStatusUseCase.execute(mapper.toCommand(id, request));
+        return ResponseEntity.ok(mapper.toResponse(vehicle));
+    }
+
+    @PatchMapping("/{id}/owner")
+    @Operation(summary = "Transfere o veiculo para o segundo dono",
+        description = "O novo dono e' identificado por CPF/CNPJ e precisa estar cadastrado e ativo. "
+            + "Ordens de servico anteriores continuam vinculadas ao dono da epoca.")
+    public ResponseEntity<VehicleResponse> transferOwner(
+        @PathVariable Long id,
+        @Valid @RequestBody TransferVehicleOwnerRequest request
+    ) {
+        Vehicle vehicle = transferVehicleOwnershipUseCase.execute(
+            new TransferVehicleOwnershipCommand(id, request.newOwnerDocument(), request.employeeId()));
         return ResponseEntity.ok(mapper.toResponse(vehicle));
     }
 }
