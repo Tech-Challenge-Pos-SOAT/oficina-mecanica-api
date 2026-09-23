@@ -21,6 +21,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -29,6 +30,7 @@ class RejectServiceOrderBudgetUseCaseTest {
 
     @Mock private ServiceOrderRepository repository;
     @Mock private GetCustomerByDocumentUseCase getCustomerByDocumentUseCase;
+    @Mock private ServiceOrderNotifier notifier;
     @InjectMocks private RejectServiceOrderBudgetUseCase useCase;
 
     @Test
@@ -37,11 +39,11 @@ class RejectServiceOrderBudgetUseCaseTest {
         order.startDiagnosis(1L);
         order.addService(5L, new BigDecimal("120.00"));
         order.submitForApproval(1L);
+        Customer customer = new Customer(7L, new Document(DOCUMENT), "Maria Oliveira", "(31) 98765-4321",
+            "maria@email.com", EntityStatus.ACTIVE, Instant.now(), Instant.now());
 
         when(repository.findById(1L)).thenReturn(Optional.of(order));
-        when(getCustomerByDocumentUseCase.execute(DOCUMENT)).thenReturn(
-            new Customer(7L, new Document(DOCUMENT), "Maria Oliveira", "(31) 98765-4321",
-                "maria@email.com", EntityStatus.ACTIVE, Instant.now(), Instant.now()));
+        when(getCustomerByDocumentUseCase.execute(DOCUMENT)).thenReturn(customer);
         when(repository.save(any(ServiceOrder.class))).thenAnswer(i -> i.getArgument(0));
 
         ServiceOrder result = useCase.execute(1L, DOCUMENT, "Preco alto");
@@ -51,5 +53,6 @@ class RejectServiceOrderBudgetUseCaseTest {
         assertThat(result.getStatus()).isEqualTo(ServiceOrderStatus.FINISHED);
         assertThat(last.getAuthorType()).isEqualTo(AuthorType.CUSTOMER);
         assertThat(last.getObservation()).isEqualTo("Preco alto");
+        verify(notifier).notifyBudgetRejected(result, customer, "Preco alto");
     }
 }

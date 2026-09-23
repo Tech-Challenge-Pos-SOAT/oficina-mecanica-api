@@ -31,19 +31,22 @@ public class ApproveServiceOrderBudgetUseCase {
     private final CheckMaterialAvailabilityUseCase checkMaterialAvailabilityUseCase;
     private final ServiceRepository serviceRepository;
     private final CancelServiceOrderUseCase cancelServiceOrderUseCase;
+    private final ServiceOrderNotifier notifier;
 
     public ApproveServiceOrderBudgetUseCase(ServiceOrderRepository repository,
                                             GetCustomerByDocumentUseCase getCustomerByDocumentUseCase,
                                             StockDebitUseCase stockDebitUseCase,
                                             CheckMaterialAvailabilityUseCase checkMaterialAvailabilityUseCase,
                                             ServiceRepository serviceRepository,
-                                            CancelServiceOrderUseCase cancelServiceOrderUseCase) {
+                                            CancelServiceOrderUseCase cancelServiceOrderUseCase,
+                                            ServiceOrderNotifier notifier) {
         this.repository = repository;
         this.getCustomerByDocumentUseCase = getCustomerByDocumentUseCase;
         this.stockDebitUseCase = stockDebitUseCase;
         this.checkMaterialAvailabilityUseCase = checkMaterialAvailabilityUseCase;
         this.serviceRepository = serviceRepository;
         this.cancelServiceOrderUseCase = cancelServiceOrderUseCase;
+        this.notifier = notifier;
     }
 
     @Transactional
@@ -68,7 +71,9 @@ public class ApproveServiceOrderBudgetUseCase {
         }
         order.markCycleApproved();
 
-        return repository.save(order);
+        ServiceOrder saved = repository.save(order);
+        notifier.notifyBudgetApproved(saved, customer);
+        return saved;
     }
 
     /** Primeiro motivo que impede a execucao, ou null se esta tudo disponivel. */

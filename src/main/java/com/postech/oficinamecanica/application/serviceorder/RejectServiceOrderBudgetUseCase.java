@@ -13,11 +13,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class RejectServiceOrderBudgetUseCase {
     private final ServiceOrderRepository repository;
     private final GetCustomerByDocumentUseCase getCustomerByDocumentUseCase;
+    private final ServiceOrderNotifier notifier;
 
     public RejectServiceOrderBudgetUseCase(ServiceOrderRepository repository,
-                                            GetCustomerByDocumentUseCase getCustomerByDocumentUseCase) {
+                                            GetCustomerByDocumentUseCase getCustomerByDocumentUseCase,
+                                            ServiceOrderNotifier notifier) {
         this.repository = repository;
         this.getCustomerByDocumentUseCase = getCustomerByDocumentUseCase;
+        this.notifier = notifier;
     }
 
     @Transactional
@@ -31,6 +34,8 @@ public class RejectServiceOrderBudgetUseCase {
         }
 
         order.rejectBudget(reason);
-        return repository.save(order);
+        ServiceOrder saved = repository.save(order);
+        notifier.notifyBudgetRejected(saved, customer, reason);
+        return saved;
     }
 }
