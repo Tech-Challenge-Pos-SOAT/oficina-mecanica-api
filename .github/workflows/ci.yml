@@ -256,6 +256,24 @@ jobs:
         # analisar - se baixassemos o arquivo pra dentro de target/, o
         # clean apagaria ele antes do Sonar conseguir ler.
 
+      - name: Garantir que o arquivo de issues externas sempre exista
+        run: |
+          mkdir -p external-reports
+          if [ ! -f external-reports/sonar-external-issues.json ]; then
+            echo '{"rules":[],"issues":[]}' > external-reports/sonar-external-issues.json
+          fi
+        # Correcao do bug que derrubou o pipeline: ao contrario do que o
+        # comentario abaixo dizia, o Sonar NAO ignora
+        # sonar.externalIssuesReportPaths quando o arquivo nao existe - ele
+        # lanca NoSuchFileException e quebra o scan inteiro. Isso acontece
+        # sempre que o download do artifact acima falha (ex.: Dependency-Check
+        # nao gerou relatorio na etapa 4, ou o artifact nao foi publicado),
+        # porque os dois steps anteriores usam continue-on-error/if-no-files-found:
+        # warn e engolem o erro silenciosamente. Este step garante um arquivo
+        # valido (vazio, sem issues) sempre que o download nao trouxe um real,
+        # para o -Dsonar.externalIssuesReportPaths abaixo nunca apontar para
+        # um caminho inexistente.
+
       - name: Definir projectKey (separado por PR, unico para a main)
         id: sonar_project
         run: |
@@ -287,9 +305,12 @@ jobs:
         # sonar.externalIssuesReportPaths: importa as vulnerabilidades do
         #   Dependency-Check (etapa 4) como issues dentro do proprio
         #   dashboard do SonarQube, sem precisar de plugin (o plugin da
-        #   comunidade pra isso esta sem manutencao desde 2024). Se o
-        #   arquivo nao existir (download falhou/sem vulnerabilidade), o
-        #   Sonar so ignora essa propriedade.
+        #   comunidade pra isso esta sem manutencao desde 2024). ATENCAO: ao
+        #   contrario do que essa nota dizia antes, o Sonar NAO ignora essa
+        #   propriedade se o arquivo nao existir - ele quebra o scan com
+        #   NoSuchFileException. Por isso o step "Garantir que o arquivo de
+        #   issues externas sempre exista" (acima) cria um arquivo vazio e
+        #   valido quando o download da etapa 4 nao trouxe um real.
         # SONAR_HOST_URL: use http://localhost:9000 - o runner self-hosted
         #   roda na mesma maquina do SonarQube local, entao localhost e
         #   sempre alcancavel; um host tipo "sonarqube.local" (mDNS) pode

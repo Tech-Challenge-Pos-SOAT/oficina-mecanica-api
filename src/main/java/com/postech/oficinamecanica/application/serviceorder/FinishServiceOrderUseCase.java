@@ -1,5 +1,7 @@
 package com.postech.oficinamecanica.application.serviceorder;
 
+import com.postech.oficinamecanica.application.customer.GetCustomerUseCase;
+import com.postech.oficinamecanica.domain.customer.Customer;
 import com.postech.oficinamecanica.domain.serviceorder.ServiceOrder;
 import com.postech.oficinamecanica.domain.serviceorder.ServiceOrderNotFoundException;
 import org.springframework.stereotype.Service;
@@ -9,10 +11,15 @@ import org.springframework.transaction.annotation.Transactional;
 public class FinishServiceOrderUseCase {
     private final ServiceOrderRepository repository;
     private final ActiveEmployeeFinder activeEmployeeFinder;
+    private final GetCustomerUseCase getCustomerUseCase;
+    private final ServiceOrderNotifier notifier;
 
-    public FinishServiceOrderUseCase(ServiceOrderRepository repository, ActiveEmployeeFinder activeEmployeeFinder) {
+    public FinishServiceOrderUseCase(ServiceOrderRepository repository, ActiveEmployeeFinder activeEmployeeFinder,
+                                      GetCustomerUseCase getCustomerUseCase, ServiceOrderNotifier notifier) {
         this.repository = repository;
         this.activeEmployeeFinder = activeEmployeeFinder;
+        this.getCustomerUseCase = getCustomerUseCase;
+        this.notifier = notifier;
     }
 
     @Transactional
@@ -23,6 +30,10 @@ public class FinishServiceOrderUseCase {
             .orElseThrow(() -> new ServiceOrderNotFoundException(serviceOrderId));
 
         order.finish(employeeId, observation);
-        return repository.save(order);
+        ServiceOrder saved = repository.save(order);
+
+        Customer customer = getCustomerUseCase.execute(saved.getCustomerId());
+        notifier.notifyFinished(saved, customer);
+        return saved;
     }
 }

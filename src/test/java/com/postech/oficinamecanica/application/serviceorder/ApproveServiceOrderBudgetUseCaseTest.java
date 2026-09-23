@@ -42,6 +42,7 @@ class ApproveServiceOrderBudgetUseCaseTest {
     @Mock private CheckMaterialAvailabilityUseCase checkMaterialAvailabilityUseCase;
     @Mock private ServiceRepository serviceRepository;
     @Mock private CancelServiceOrderUseCase cancelServiceOrderUseCase;
+    @Mock private ServiceOrderNotifier notifier;
     @InjectMocks private ApproveServiceOrderBudgetUseCase useCase;
 
     private Customer customer(Long id) {
@@ -66,8 +67,9 @@ class ApproveServiceOrderBudgetUseCaseTest {
     @Test
     void shouldMoveToExecutionAndDebitStockOfEveryPendingMaterial() {
         ServiceOrder order = orderAwaitingApproval();
+        Customer customer = customer(7L);
         when(repository.findById(ORDER_ID)).thenReturn(Optional.of(order));
-        when(getCustomerByDocumentUseCase.execute(DOCUMENT)).thenReturn(customer(7L));
+        when(getCustomerByDocumentUseCase.execute(DOCUMENT)).thenReturn(customer);
         when(serviceRepository.findById(5L)).thenReturn(Optional.of(catalogService(EntityStatus.ACTIVE)));
         when(checkMaterialAvailabilityUseCase.isAvailable(9L, 2)).thenReturn(true);
         when(repository.save(any(ServiceOrder.class))).thenAnswer(i -> i.getArgument(0));
@@ -78,6 +80,7 @@ class ApproveServiceOrderBudgetUseCaseTest {
         assertThat(result.pendingStockDebit()).isEmpty();
         assertThat(result.getServices().get(0).isApproved()).isTrue();
         verify(stockDebitUseCase).execute(9L, ORDER_ID, 2);
+        verify(notifier).notifyBudgetApproved(result, customer);
     }
 
     @Test

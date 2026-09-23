@@ -51,7 +51,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @TestPropertySource(properties = {
         "spring.jpa.hibernate.ddl-auto=validate",
-        "spring.docker.compose.enabled=false"
+        "spring.docker.compose.enabled=false",
+        // Sem SMTP real no teste: aponta pra porta fechada em localhost, a
+        // conexao e' recusada na hora (nao trava esperando o timeout de rede
+        // contra a Brevo) e o adapter engole a falha, como em producao.
+        "spring.mail.host=localhost",
+        "spring.mail.port=2525"
 })
 class ServiceOrderFlowIntegrationTest {
 

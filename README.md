@@ -59,6 +59,11 @@ mvn spring-boot:run              # app sem Docker, sobe o banco via spring-boot-
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
 - Postgres: `localhost:5432` (usuario/senha `oficina`/`oficina`, banco `oficina_mecanica`)
 
+Notificacao por e-mail (mudanca de status da OS via Brevo): defina `BREVO_SMTP_USERNAME`,
+`BREVO_SMTP_PASSWORD` (SMTP key da Brevo) e `MAIL_FROM` no ambiente. `BREVO_SMTP_HOST` e
+`BREVO_SMTP_PORT` ja tem default (`smtp-relay.brevo.com` / `587`). Sem essas variaveis o
+envio so' falha silenciosamente (logado), a ordem de servico continua funcionando normal.
+
 ## Testes
 
 ```bash
