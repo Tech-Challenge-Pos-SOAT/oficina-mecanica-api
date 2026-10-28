@@ -61,6 +61,19 @@ curl http://IP_EXTERNO/actuator/health
 
 O Swagger fica em `http://IP_EXTERNO/swagger-ui.html`.
 
+## Validacao manual pelo Cloud Shell (antes do pipeline)
+
+Para validar a infraestrutura sem depender do GitHub, abra o Cloud Shell no
+console (icone de terminal no topo), clone o repositorio, rode o Terraform e use
+o script de deploy manual, que builda a imagem, publica no Artifact Registry,
+cria o Secret e aplica os manifestos, mostrando o IP no final:
+
+```bash
+export DB_PASSWORD='a-mesma-senha-do-terraform'
+export JWT_SECRET="$(openssl rand -base64 48)"
+./scripts/deploy-gcp-manual.sh
+```
+
 ## 5. Demonstracao do HPA
 
 Com o k6 instalado, rode o teste de carga e observe as replicas subirem em
