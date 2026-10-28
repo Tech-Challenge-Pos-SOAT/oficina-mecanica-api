@@ -2,6 +2,7 @@ package com.postech.oficinamecanica.infrastructure.scheduling;
 
 import com.postech.oficinamecanica.application.serviceorder.ExpireServiceOrderBudgetsUseCase;
 import com.postech.oficinamecanica.domain.serviceorder.ServiceOrder;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -12,7 +13,8 @@ import java.util.List;
 /**
  * Varre uma vez por dia as ordens paradas aguardando aprovacao e aplica o
  * prazo de resposta. O horario e' configuravel por
- * "serviceorder.budget-expiration-cron".
+ * "serviceorder.budget-expiration-cron". Com varias replicas, o ShedLock
+ * garante uma unica execucao por rodada.
  */
 @Component
 public class ServiceOrderBudgetExpirationJob {
@@ -24,6 +26,7 @@ public class ServiceOrderBudgetExpirationJob {
         this.expireServiceOrderBudgetsUseCase = expireServiceOrderBudgetsUseCase;
     }
 
+    @SchedulerLock(name = "serviceOrderBudgetExpiration", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
     @Scheduled(cron = "${serviceorder.budget-expiration-cron:0 0 3 * * *}", zone = "America/Sao_Paulo")
     public void run() {
         List<ServiceOrder> afetadas = expireServiceOrderBudgetsUseCase.execute();

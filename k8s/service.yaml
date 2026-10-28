@@ -1,0 +1,17 @@
+# Exposicao externa: o GKE cria um Load Balancer do Google com IP publico.
+# O IP aparece em "kubectl -n oficina get svc oficina-api" (EXTERNAL-IP).
+apiVersion: v1
+kind: Service
+metadata:
+  name: oficina-api
+  namespace: oficina
+  labels:
+    app: oficina-api
+spec:
+  type: LoadBalancer
+  selector:
+    app: oficina-api
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

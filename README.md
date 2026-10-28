@@ -118,6 +118,15 @@ Detalhes do roteiro, efeitos colaterais por etapa e codigos de erro em
 Colecao completa de requests (importavel no Insomnia): [`../../docs/insomnia`](docs/insomnia/).
 Endpoints estruturados no Swagger ao subir a aplicacao.
 
+## Deploy no Google Cloud (Fase 2)
+
+A versao final roda no GKE Autopilot com Cloud SQL, criada por Terraform. O
+desenho, as decisoes e os diagramas estao em [`docs/arquitetura.md`](docs/arquitetura.md),
+o passo a passo em [`docs/deploy-gcp.md`](docs/deploy-gcp.md), a infraestrutura em
+[`infra/`](infra/), os manifestos Kubernetes em [`k8s/`](k8s/) e a entrega
+continua em `.github/workflows/cd.yml`. O teste de carga que demonstra o HPA
+esta em [`load-test/hpa-load.js`](load-test/hpa-load.js).
+
 ## Pipeline de CI (`../../.github/workflows/ci.yml`)
 
 Sequencial em todo PR/push para `main`: **check** (branch atualizada) → **build**

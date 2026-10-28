@@ -1,10 +1,31 @@
 package com.postech.oficinamecanica.infrastructure.config;
 
+import net.javacrumbs.shedlock.core.LockProvider;
+import net.javacrumbs.shedlock.provider.jdbctemplate.JdbcTemplateLockProvider;
+import net.javacrumbs.shedlock.spring.annotation.EnableSchedulerLock;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 
-/** Liga o agendador usado pelo prazo de aprovacao do orcamento. */
+import javax.sql.DataSource;
+
+/**
+ * Liga o agendador usado pelo prazo de aprovacao do orcamento. O lock fica no
+ * Postgres (tabela shedlock, migration V9) para que, com varias replicas no
+ * Kubernetes, apenas uma execute cada rodada do job.
+ */
 @Configuration
 @EnableScheduling
+@EnableSchedulerLock(defaultLockAtMostFor = "PT10M")
 public class SchedulingConfig {
+
+    @Bean
+    public LockProvider lockProvider(DataSource dataSource) {
+        return new JdbcTemplateLockProvider(
+            JdbcTemplateLockProvider.Configuration.builder()
+                .withJdbcTemplate(new JdbcTemplate(dataSource))
+                .usingDbTime()
+                .build());
+    }
 }

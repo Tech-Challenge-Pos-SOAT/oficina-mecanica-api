@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: oficina
+resources:
+  - namespace.yaml
+  - serviceaccount.yaml
+  - configmap.yaml
+  - deployment.yaml
+  - service.yaml
+  - hpa.yaml
+  - pdb.yaml
+# O secret NAO esta aqui de proposito: ele e' criado a parte (ver secret.example.yaml).
+images:
+  - name: oficina-mecanica-api
+    newName: REGION-docker.pkg.dev/PROJECT_ID/oficina/oficina-mecanica-api
+    newTag: latest
