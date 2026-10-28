@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 
 public interface ServiceOrderJpaRepository extends JpaRepository<ServiceOrderJpaEntity, Long> {
@@ -14,6 +15,9 @@ public interface ServiceOrderJpaRepository extends JpaRepository<ServiceOrderJpa
 
     @Query("SELECT o FROM ServiceOrderJpaEntity o WHERE o.status = :status ORDER BY o.id ASC")
     List<ServiceOrderJpaEntity> findByStatusOrderByIdAsc(@Param("status") ServiceOrderStatus status);
+
+    @Query("SELECT o FROM ServiceOrderJpaEntity o WHERE o.status IN :statuses ORDER BY o.id ASC")
+    List<ServiceOrderJpaEntity> findByStatusInOrderByIdAsc(@Param("statuses") Collection<ServiceOrderStatus> statuses);
 
     @Query("SELECT o FROM ServiceOrderJpaEntity o WHERE o.customerId = :customerId ORDER BY o.id ASC")
     List<ServiceOrderJpaEntity> findByCustomerIdOrderByIdAsc(@Param("customerId") Long customerId);

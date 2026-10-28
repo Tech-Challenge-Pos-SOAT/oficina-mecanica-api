@@ -37,6 +37,27 @@ mail:
 server:
   port: 8080
 
+# Actuator: so' health e info ficam expostos. O filtro JWT cobre apenas /api/*,
+# entao /actuator/** e' publico (probes do Kubernetes nao carregam token).
+# Liveness (/actuator/health/liveness) e readiness (/actuator/health/readiness)
+# sao os endpoints usados pelo Deployment; readiness inclui o banco.
+management:
+  health:
+    mail:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: never
+      group:
+        readiness:
+          include: readinessState,db
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

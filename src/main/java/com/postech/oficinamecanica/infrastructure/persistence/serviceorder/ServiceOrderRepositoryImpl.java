@@ -6,6 +6,7 @@ import com.postech.oficinamecanica.domain.serviceorder.ServiceOrderStatus;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,6 +51,15 @@ public class ServiceOrderRepositoryImpl implements ServiceOrderRepository {
             : jpaRepository.findByStatusOrderByIdAsc(status);
 
         return entities.stream()
+            .map(mapper::toDomain)
+            .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ServiceOrder> findByStatusIn(Collection<ServiceOrderStatus> statuses) {
+        return jpaRepository.findByStatusInOrderByIdAsc(statuses)
+            .stream()
             .map(mapper::toDomain)
             .toList();
     }

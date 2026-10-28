@@ -76,6 +76,33 @@ class ServiceOrderControllerTest {
     }
 
     @Test
+    void shouldOpenServiceOrderWithServicesAndMaterials() throws Exception {
+        ServiceOrder order = anOrder();
+        when(openServiceOrderUseCase.execute(any(OpenServiceOrderCommand.class))).thenReturn(order);
+        when(mapper.toResponse(order)).thenReturn(aResponse("RECEIVED"));
+
+        mockMvc.perform(post("/api/service-orders")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"customerDocument\":\"529.982.247-25\",\"plate\":\"ABC-1234\",\"employeeId\":1,"
+                    + "\"serviceIds\":[5],\"materials\":[{\"materialId\":9,\"quantity\":2}]}"))
+            .andExpect(status().isCreated());
+
+        verify(openServiceOrderUseCase).execute(new OpenServiceOrderCommand("529.982.247-25", "ABC-1234", 1L,
+            List.of(5L), List.of(new OpenServiceOrderCommand.MaterialItem(9L, 2))));
+    }
+
+    @Test
+    void shouldRejectOpeningWithNonPositiveMaterialQuantity() throws Exception {
+        mockMvc.perform(post("/api/service-orders")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"customerDocument\":\"529.982.247-25\",\"plate\":\"ABC-1234\",\"employeeId\":1,"
+                    + "\"materials\":[{\"materialId\":9,\"quantity\":0}]}"))
+            .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(openServiceOrderUseCase);
+    }
+
+    @Test
     void shouldRejectOpeningWithoutCustomerDocument() throws Exception {
         mockMvc.perform(post("/api/service-orders")
                 .contentType(MediaType.APPLICATION_JSON)

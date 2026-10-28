@@ -72,10 +72,15 @@ public class ServiceOrderController {
     }
 
     @PostMapping
-    @Operation(summary = "Abre uma OS a partir do CPF/CNPJ do cliente e da placa do veiculo")
+    @Operation(summary = "Abre uma OS a partir do CPF/CNPJ do cliente e da placa do veiculo",
+               description = "Aceita, opcionalmente, serviceIds e materials para ja abrir a ordem com os itens.")
     public ResponseEntity<ServiceOrderResponse> open(@Valid @RequestBody OpenServiceOrderRequest request) {
         ServiceOrder order = openServiceOrderUseCase.execute(new OpenServiceOrderCommand(
-            request.customerDocument(), request.plate(), request.employeeId()));
+            request.customerDocument(), request.plate(), request.employeeId(),
+            request.serviceIds(),
+            request.materials() == null ? null : request.materials().stream()
+                .map(item -> new OpenServiceOrderCommand.MaterialItem(item.materialId(), item.quantity()))
+                .toList()));
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toResponse(order));
     }
 

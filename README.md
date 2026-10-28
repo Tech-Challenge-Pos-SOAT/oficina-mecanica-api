@@ -57,6 +57,7 @@ mvn spring-boot:run              # app sem Docker, sobe o banco via spring-boot-
 
 - API: `http://localhost:8080`
 - Swagger UI: `http://localhost:8080/swagger-ui.html`
+- Health (Actuator, publico): `/actuator/health`, `/actuator/health/liveness`, `/actuator/health/readiness`
 - Postgres: `localhost:5432` (usuario/senha `oficina`/`oficina`, banco `oficina_mecanica`)
 
 Notificacao por e-mail (mudanca de status da OS via Brevo): defina `BREVO_SMTP_USERNAME`,
@@ -111,7 +112,7 @@ Detalhes do roteiro, efeitos colaterais por etapa e codigos de erro em
 | Materiais | `/api/materials` | CRUD + `GET /low-stock`, `PATCH /{id}/status`, `POST /{id}/stock-entry` |
 | Movimentacao de estoque | `/api/material-transactions`, `/api/materials/{id}/transactions` | entradas/saidas de estoque |
 | Servicos | `/api/services` | CRUD + `PATCH /{id}/status` |
-| Ordem de servico | `/api/service-orders` | diagnostico, servicos, materiais, orcamento, conclusao, cancelamento, entrega |
+| Ordem de servico | `/api/service-orders` | abertura (com servicos e pecas opcionais), listagem por prioridade, diagnostico, servicos, materiais, orcamento, conclusao, cancelamento, entrega |
 | Funcionarios | `/api/employees` | CRUD + `PATCH /{id}/status` |
 
 Colecao completa de requests (importavel no Insomnia): [`../../docs/insomnia`](docs/insomnia/).
