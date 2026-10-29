@@ -21,6 +21,21 @@ Diante disso, a oficina decidiu investir no sistema, que permitira aos clientes
 acompanhar em tempo real o andamento do servico, autorizar reparos adicionais via
 aplicativo e garantir uma gestao interna eficiente e segura.
 
+## Objetivos da Fase 2
+
+A Fase 1 entregou o dominio (clientes, veiculos, materiais, servicos, ordem de
+servico) e as APIs core. A Fase 2 evolui a solucao para produzir:
+
+- Listagem de ordens de servico ordenada por status e idade, excluindo as
+  finalizadas e entregues;
+- Abertura de OS ja com servicos e pecas em uma unica chamada;
+- Observabilidade via Spring Boot Actuator (liveness/readiness);
+- Job de expiracao de orcamento coordenado entre replicas com ShedLock;
+- Notificacao por e-mail ao cliente a cada mudanca de status (Brevo);
+- Deploy em Kubernetes (GKE Autopilot) com infraestrutura provisionada por
+  Terraform, pipeline de CI/CD e escalabilidade automatica validada por teste
+  de carga.
+
 ## Stack
 
 - Java 21, Spring Boot 3.5.x (Web, Data JPA, Security, Validation, Actuator)
@@ -115,17 +130,107 @@ Detalhes do roteiro, efeitos colaterais por etapa e codigos de erro em
 | Ordem de servico | `/api/service-orders` | abertura (com servicos e pecas opcionais), listagem por prioridade, diagnostico, servicos, materiais, orcamento, conclusao, cancelamento, entrega |
 | Funcionarios | `/api/employees` | CRUD + `PATCH /{id}/status` |
 
-Colecao completa de requests (importavel no Insomnia): [`../../docs/insomnia`](docs/insomnia/).
-Endpoints estruturados no Swagger ao subir a aplicacao.
+## Collection das APIs
+
+Colecao completa de requests (importavel no Insomnia), na branch `main`:
+[github.com/Tech-Challenge-Pos-SOAT/oficina-mecanica-api/tree/main/docs/insomnia](https://github.com/Tech-Challenge-Pos-SOAT/oficina-mecanica-api/tree/main/docs/insomnia).
+Com a aplicacao no ar, os mesmos endpoints tambem ficam documentados no Swagger
+em `/swagger-ui.html`.
 
 ## Deploy no Google Cloud (Fase 2)
 
-A versao final roda no GKE Autopilot com Cloud SQL, criada por Terraform. O
-desenho, as decisoes e os diagramas estao em [`docs/arquitetura.md`](docs/arquitetura.md),
-o passo a passo em [`docs/deploy-gcp.md`](docs/deploy-gcp.md), a infraestrutura em
-[`infra/`](infra/), os manifestos Kubernetes em [`k8s/`](k8s/) e a entrega
-continua em `.github/workflows/cd.yml`. O teste de carga que demonstra o HPA
-esta em [`load-test/hpa-load.js`](load-test/hpa-load.js).
+A versao final roda no GKE Autopilot com Cloud SQL, criada por Terraform.
+Decisoes completas, diagramas e tabela de escolhas em
+[`docs/arquitetura.md`](docs/arquitetura.md); passo a passo detalhado em
+[`docs/deploy-gcp.md`](docs/deploy-gcp.md).
+
+```mermaid
+flowchart LR
+    U[Cliente / Atendente] -->|HTTP| LB[Service LoadBalancer<br/>IP publico]
+    subgraph GKE[GKE Autopilot - namespace oficina]
+        LB --> P1[Pod 1<br/>API + Cloud SQL Proxy]
+        LB --> P2[Pod 2..5<br/>API + Cloud SQL Proxy]
+        HPA[HPA<br/>CPU 60%] -.escala.-> P2
+    end
+    P1 -->|IAM + TLS| SQL[(Cloud SQL<br/>PostgreSQL 16)]
+    P2 -->|IAM + TLS| SQL
+    P1 -.SMTP.-> BR[Brevo<br/>e-mail ao cliente]
+    GH[GitHub Actions] -->|push imagem| AR[Artifact Registry]
+    GH -->|kubectl apply| GKE
+    AR -->|pull| GKE
+    TF[Terraform<br/>estado no GCS] -->|cria| GKE
+    TF -->|cria| SQL
+    TF -->|cria| AR
+```
+
+```mermaid
+flowchart LR
+    A[Pull Request] --> B[CI: check, build, test,<br/>dependency-check, trivy, sonar]
+    B --> C[Merge na main]
+    C --> D[CI da main passa]
+    D --> E[CD: build da imagem<br/>push no Artifact Registry]
+    E --> F[kubectl apply -k k8s/<br/>rollout status]
+    F --> G[API no ar com IP publico]
+```
+
+Imagem em alta resolucao: [`docs/img/arquitetura.png`](docs/img/arquitetura.png).
+
+### Provisionamento com Terraform
+
+Cria GKE Autopilot, Cloud SQL, Artifact Registry, IAM e Workload Identity
+Federation (lista completa em [`infra/README.md`](infra/README.md)):
+
+```bash
+cd infra
+./bootstrap.sh SEU_PROJECT_ID
+cp terraform.tfvars.example terraform.tfvars
+export TF_VAR_db_password='uma-senha-forte'
+terraform init -backend-config="bucket=SEU_PROJECT_ID-tfstate"
+terraform apply
+```
+
+### Deploy em Kubernetes
+
+Os manifestos ficam em [`k8s/`](k8s/) (namespace, ServiceAccount, ConfigMap,
+Secret, Deployment com sidecar Cloud SQL Auth Proxy, Service LoadBalancer, HPA
+2-5 replicas, PDB). Um push na `main` aciona o CD automaticamente; para
+disparar manualmente ou validar pelo Cloud Shell:
+
+```bash
+export DB_PASSWORD='a-mesma-senha-do-terraform'
+export JWT_SECRET="$(openssl rand -base64 48)"
+./scripts/deploy-gcp-manual.sh
+
+gcloud container clusters get-credentials oficina-cluster --region us-central1
+kubectl -n oficina get pods,hpa,svc
+```
+
+O IP publico muda a cada ambiente (o atual sera destruido apos a avaliacao);
+obtenha o IP vigente com `kubectl -n oficina get svc oficina-api`.
+
+### Resultado do teste de escalabilidade
+
+Teste de carga com k6 ([`load-test/hpa-load.js`](load-test/hpa-load.js)), 150
+usuarios virtuais simultaneos:
+
+| Metrica | Resultado |
+|---|---|
+| Replicas | 2 → 5 (HPA, CPU alvo 60%) |
+| Tempo para atingir 5 replicas | ~1 minuto |
+| CPU no pico | 269% do alvo |
+| Requisicoes com falha | 0% |
+| Checks (k6) | 17.336 passando |
+
+```bash
+BASE_URL=http://IP_EXTERNO k6 run load-test/hpa-load.js   # -e PEAK_VUS / -e P95_MS ajustam carga e threshold
+kubectl -n oficina get hpa -w
+```
+
+### Video demonstrativo
+
+[SEU_LINK_DO_VIDEO_AQUI](SEU_LINK_DO_VIDEO_AQUI) — deploy, execucao do CI/CD,
+consumo das APIs e escalabilidade automatica (roteiro em
+[`docs/roteiro-video.md`](docs/roteiro-video.md)).
 
 ## Pipeline de CI (`../../.github/workflows/ci.yml`)
 
