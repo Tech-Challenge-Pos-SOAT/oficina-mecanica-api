@@ -135,6 +135,11 @@ jobs:
             dependency-check-data-
 
       - name: OWASP Dependency-Check (scan das dependencias do projeto)
+        # Sem limite, o download da base da NVD ja levou o job a 6h (limite do
+        # GitHub) e o CI inteiro terminou como "Cancelled", o que bloqueia o CD
+        # (ele so roda se o CI terminar com sucesso). Com o limite no STEP e
+        # continue-on-error, a demora vira aviso e o pipeline segue.
+        timeout-minutes: 25
         run: |
           mvn -B org.owasp:dependency-check-maven:12.2.2:check \
             -DnvdApiKey=${{ secrets.NVD_API_KEY }}
