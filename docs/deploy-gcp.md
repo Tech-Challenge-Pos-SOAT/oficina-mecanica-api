@@ -49,7 +49,15 @@ nao devem ser reaproveitadas.
 
 ## 4. Primeiro deploy
 
-Um push na `main` roda o CI e, se passar, o workflow "CD (GKE)" builda a imagem,
+O deploy no GKE nao acontece em merge na `main` — so em push/merge na branch
+`deploy-google-cloud` (ou disparo manual). Isso evita gastar credito do GCP a
+cada merge comum. Para subir a versao atual:
+
+```bash
+git push origin main:deploy-google-cloud
+```
+
+O CI roda nessa branch e, se passar, o workflow "CD (GKE)" builda a imagem,
 publica no Artifact Registry e aplica os manifestos. Tambem da para disparar
 manualmente em Actions, "CD (GKE)", Run workflow. Acompanhe e pegue o IP:
 

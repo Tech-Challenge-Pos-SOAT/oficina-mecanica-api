@@ -1,15 +1,18 @@
 name: CD (GKE)
 
-# Entrega continua: so depois que o CI da main passar com sucesso, builda a
-# imagem, publica no Artifact Registry e faz o deploy no GKE. A autenticacao e'
-# por Workload Identity Federation (sem chave JSON de service account).
-# Enquanto as variaveis do GCP nao estiverem cadastradas, o job fica "skipped".
+# Entrega continua: so depois que o CI da branch deploy-google-cloud passar
+# com sucesso, builda a imagem, publica no Artifact Registry e faz o deploy
+# no GKE. Deploy nao acontece em merge na main — so em merge/push na
+# deploy-google-cloud, pra dar controle explicito de quando sobe pra nuvem.
+# A autenticacao e' por Workload Identity Federation (sem chave JSON de
+# service account). Enquanto as variaveis do GCP nao estiverem cadastradas,
+# o job fica "skipped".
 
 on:
   workflow_run:
     workflows: [CI]
     types: [completed]
-    branches: [main]
+    branches: [deploy-google-cloud]
   workflow_dispatch:
 
 permissions:

@@ -4,7 +4,7 @@ on:
   pull_request:
     branches: [ main ]
   push:
-    branches: [ main ]
+    branches: [ main, deploy-google-cloud ]
 
 # Pipeline sequencial: 1. Check -> 2. Build -> 3. Test -> 4. Dependency-Check
 # -> 5. Trivy -> 6. SonarQube. Cada etapa so comeca depois da anterior
