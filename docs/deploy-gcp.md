@@ -98,3 +98,57 @@ annotation `iam.gke.io/gcp-service-account` na ServiceAccount e se o
 `terraform apply` terminou sem erro no recurso `api_workload_identity`. Se o
 HPA mostrar `<unknown>` na CPU, confira se o Deployment tem `resources.requests.cpu`
 (tem) e aguarde cerca de um minuto pelo metrics-server.
+
+### ImagePullBackOff nos pods da API
+
+**Causa**: os nos do GKE Autopilot usam a service account padrao do Compute
+Engine, que por padrao nao tem permissao de leitura no Artifact Registry.
+
+**Diagnostico**:
+
+```bash
+kubectl -n oficina get pods
+kubectl -n oficina describe pod POD_COM_ERRO
+# procure no final: "Failed to pull image" / "denied: Permission denied"
+```
+
+**Correcao via Terraform** (ambientes novos ou recriados): o recurso
+`google_artifact_registry_repository_iam_member.nodes_pull_images` em
+`infra/iam.tf` concede `roles/artifactregistry.reader` a essa service account.
+Basta `terraform apply`.
+
+**Correcao manual** (ambiente ja criado, sem reaplicar Terraform):
+
+```bash
+PROJECT_NUMBER=$(gcloud projects describe SEU_PROJECT_ID --format='value(projectNumber)')
+gcloud artifacts repositories add-iam-policy-binding oficina \
+  --location=us-central1 \
+  --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+  --role=roles/artifactregistry.reader
+kubectl -n oficina rollout restart deployment oficina-api
+```
+
+### Instalar o k6 sem sudo no Cloud Shell
+
+O Cloud Shell nao permite `apt install` sem privilegios. Baixe o binario para
+`~/bin` (ja esta no `PATH` do Cloud Shell):
+
+```bash
+mkdir -p ~/bin
+curl -L https://github.com/grafana/k6/releases/latest/download/k6-v0.54.0-linux-amd64.tar.gz \
+  | tar -xz --strip-components=1 -C ~/bin k6-v0.54.0-linux-amd64/k6
+k6 version
+```
+
+### Rodar o teste de carga com parametros ajustaveis
+
+`load-test/hpa-load.js` aceita `PEAK_VUS` (pico de usuarios virtuais) e
+`P95_MS` (limite de latencia do p(95) usado no threshold do k6):
+
+```bash
+# padrao: 150 VUs, p(95) < 1500ms
+BASE_URL=http://IP_EXTERNO k6 run load-test/hpa-load.js
+
+# para o video, carga menor e threshold mais tolerante ao hash de senha do login
+BASE_URL=http://IP_EXTERNO k6 run -e PEAK_VUS=60 -e P95_MS=3000 load-test/hpa-load.js
+```
