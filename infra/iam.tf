@@ -26,6 +26,17 @@ resource "google_service_account_iam_member" "api_workload_identity" {
   depends_on = [google_container_cluster.oficina]
 }
 
+# Os nos do GKE Autopilot usam a conta padrao do Compute Engine, que em projetos
+# novos nao tem mais acesso de leitura ao Artifact Registry. Sem este papel os
+# pods ficam em ImagePullBackOff ao baixar a imagem da API.
+resource "google_artifact_registry_repository_iam_member" "nodes_pull_images" {
+  project    = var.project_id
+  location   = google_artifact_registry_repository.oficina.location
+  repository = google_artifact_registry_repository.oficina.repository_id
+  role       = "roles/artifactregistry.reader"
+  member     = "serviceAccount:${data.google_project.this.number}-compute@developer.gserviceaccount.com"
+}
+
 # --- Identidade do pipeline (Workload Identity Federation com o GitHub) ------
 
 resource "google_service_account" "deployer" {

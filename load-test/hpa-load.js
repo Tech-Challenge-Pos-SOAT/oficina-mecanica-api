@@ -9,17 +9,20 @@ import { check, sleep } from 'k6';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
 const DOCUMENT = __ENV.DOCUMENT || '529.982.247-25';
+// Pico de usuarios virtuais e limite de latencia ajustaveis: -e PEAK_VUS=80 -e P95_MS=5000
+const PEAK_VUS = Number(__ENV.PEAK_VUS || 150);
+const P95_MS = Number(__ENV.P95_MS || 1500);
 
 export const options = {
   stages: [
     { duration: '1m', target: 20 },   // aquecimento
-    { duration: '4m', target: 150 },  // carga alta: o HPA deve criar replicas
-    { duration: '2m', target: 150 },
+    { duration: '4m', target: PEAK_VUS },  // carga alta: o HPA deve criar replicas
+    { duration: '2m', target: PEAK_VUS },
     { duration: '2m', target: 0 },    // queda: replicas voltam ao minimo
   ],
   thresholds: {
     http_req_failed: ['rate<0.02'],
-    http_req_duration: ['p(95)<1500'],
+    http_req_duration: [`p(95)<${P95_MS}`],
   },
 };
 

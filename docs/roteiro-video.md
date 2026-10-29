@@ -1,4 +1,4 @@
-# Roteiro do video (ate 10 minutos)
+# Roteiro do video (ate 15 minutos)
 
 O enunciado pede um video mostrando a arquitetura, a infraestrutura criada, o
 pipeline e a aplicacao funcionando. A ordem abaixo cabe em cerca de dez minutos
