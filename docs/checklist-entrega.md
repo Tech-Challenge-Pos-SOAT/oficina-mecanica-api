@@ -34,9 +34,10 @@ verificado nos arquivos reais do repositorio nesta sessao (28/10/2026, branch
 
 - [x] CI (`.github/workflows/ci.yml`): check de branch, build, test (+
   JaCoCo), dependency-check (OWASP), trivy (imagem), sonar.
-- [x] CD (`.github/workflows/cd.yml`): build e push da imagem no Artifact
-  Registry, deploy no cluster (Secret a partir de GitHub Secrets, apply dos
-  manifestos, rollout status) — autenticado via Workload Identity Federation.
+- [x] CD (etapa 8 do `.github/workflows/ci.yml`, so na branch
+  `deploy-google-cloud`): build e push da imagem no Artifact Registry, deploy no
+  cluster (Secret a partir de GitHub Secrets, apply dos manifestos, rollout
+  status) — autenticado via Workload Identity Federation.
 
 ## Documentacao
 

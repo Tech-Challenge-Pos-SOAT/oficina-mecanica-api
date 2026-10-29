@@ -6,9 +6,15 @@ on:
   push:
     branches: [ main, deploy-google-cloud ]
 
-# Pipeline sequencial: 1. Check -> 2. Build -> 3. Test -> 4. Dependency-Check
-# -> 5. Trivy -> 6. SonarQube. Cada etapa so comeca depois da anterior
-# terminar (needs), pra falhar rapido e deixar o grafo do Actions claro.
+# Pipeline unico (CI + CD): 1. Check -> 2. Build -> 3. Test -> 4. Dependency-Check
+# -> 5. Trivy -> 6. SonarQube / 7. Relatorio -> 8. Deploy no GKE. Cada etapa so
+# comeca depois da anterior terminar (needs), pra falhar rapido e deixar o grafo
+# do Actions claro. A etapa 8 (build da imagem, push no Artifact Registry e
+# deploy no GKE) so roda em push na branch deploy-google-cloud, entao nao
+# depende da main nem de um segundo workflow, e fica "skipped" nas demais
+# branches e em PR. Autentica no Google Cloud por Workload Identity Federation
+# (sem chave JSON) e fica "skipped" enquanto a variavel GCP_PROJECT_ID nao
+# estiver cadastrada.
 
 jobs:
   check:
@@ -430,3 +436,93 @@ jobs:
   #    (e sem os checks acima passando).
   # 3. Quem abre o PR nao pode aprovar/mergear o proprio PR (o GitHub ja
   #    bloqueia isso por padrao).
+
+  deploy:
+    name: "8. Deploy no GKE (so na branch deploy-google-cloud)"
+    # Roda depois de test, dependency-check e trivy (trivy depende dos dois).
+    # O Sonar (runner self-hosted) e o relatorio de vulnerabilidades ficam em
+    # paralelo: se a maquina do Sonar estiver desligada, o deploy nao trava.
+    needs: [test, trivy]
+    if: ${{ !failure() && !cancelled() && github.event_name == 'push' && github.ref == 'refs/heads/deploy-google-cloud' && vars.GCP_PROJECT_ID != '' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    concurrency:
+      group: deploy-gke
+      cancel-in-progress: false
+    env:
+      PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      REGION: ${{ vars.GCP_REGION }}
+      CLUSTER: ${{ vars.GKE_CLUSTER }}
+      INSTANCE_CONNECTION_NAME: ${{ vars.CLOUDSQL_CONNECTION_NAME }}
+      MAIL_FROM: ${{ vars.MAIL_FROM }}
+      IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/oficina/oficina-mecanica-api
+    steps:
+      - name: Checkout (commit que passou nos testes)
+        uses: actions/checkout@v4
+
+      - name: Autenticar no Google Cloud (Workload Identity Federation)
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_SERVICE_ACCOUNT }}
+
+      - name: Configurar gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          install_components: gke-gcloud-auth-plugin
+
+      - name: Login do Docker no Artifact Registry
+        run: gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+
+      - name: Build e push da imagem
+        run: |
+          TAG="${{ github.sha }}"
+          docker build -t "${IMAGE}:${TAG}" -t "${IMAGE}:latest" .
+          docker push "${IMAGE}:${TAG}"
+          docker push "${IMAGE}:latest"
+          echo "TAG=${TAG}" >> "$GITHUB_ENV"
+
+      - name: Credenciais do cluster
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.CLUSTER }}
+          location: ${{ env.REGION }}
+
+      - name: Preparar manifestos (placeholders e imagem)
+        run: |
+          sed -i "s|__PROJECT_ID__|${PROJECT_ID}|g" k8s/serviceaccount.yaml
+          sed -i "s|__INSTANCE_CONNECTION_NAME__|${INSTANCE_CONNECTION_NAME}|g" k8s/configmap.yaml
+          if [ -n "${MAIL_FROM}" ]; then
+            sed -i "s|seu-email-remetente@exemplo.com|${MAIL_FROM}|g" k8s/configmap.yaml
+          fi
+          cd k8s
+          kustomize edit set image "oficina-mecanica-api=${IMAGE}:${TAG}"
+
+      - name: Namespace e Secret (a partir dos GitHub Secrets)
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl -n oficina create secret generic oficina-api-secret \
+            --from-literal=DB_PASSWORD="${{ secrets.DB_PASSWORD }}" \
+            --from-literal=JWT_SECRET="${{ secrets.JWT_SECRET }}" \
+            --from-literal=BREVO_SMTP_USERNAME="${{ secrets.BREVO_SMTP_USERNAME }}" \
+            --from-literal=BREVO_SMTP_PASSWORD="${{ secrets.BREVO_SMTP_PASSWORD }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Deploy
+        run: kubectl apply -k k8s/
+
+      - name: Aguardar o rollout
+        run: kubectl -n oficina rollout status deployment/oficina-api --timeout=300s
+
+      - name: Resumo do deploy
+        run: |
+          {
+            echo "### Deploy no GKE"
+            echo "Imagem: \`${IMAGE}:${TAG}\`"
+            echo
+            echo '```'
+            kubectl -n oficina get deploy,hpa,svc
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

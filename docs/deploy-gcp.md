@@ -3,7 +3,7 @@
 Este guia leva do zero ao ambiente final do Tech Challenge Fase 2. O desenho
 completo esta em `docs/arquitetura.md`. Tudo que cria recurso na nuvem esta no
 Terraform (`infra/`), os manifestos estao em `k8s/` e o pipeline de entrega
-em `.github/workflows/cd.yml`.
+em `.github/workflows/ci.yml` (CI e CD no mesmo workflow).
 
 ## 1. Conta e projeto
 
@@ -49,13 +49,13 @@ nao devem ser reaproveitadas.
 
 ## 4. Primeiro deploy
 
-O deploy no GKE nao depende da `main` nem de merge: todo push na branch
-`deploy-google-cloud` dispara o workflow "CD (GKE)", que roda os testes, builda
-a imagem, publica no Artifact Registry e aplica os manifestos. O gatilho e o
-proprio push, entao o `cd.yml` vale a partir do commit da branch (um gatilho
-`workflow_run` exigiria o arquivo na `main`) e o deploy nao espera o CI
-completo (Dependency-Check, Trivy e Sonar, que sao lentos). Isso tambem evita
-gastar credito do GCP a cada merge comum. Para subir qualquer branch de
+CI e CD ficam em um unico workflow, `.github/workflows/ci.yml`. A etapa 8
+("Deploy no GKE") roda so em push na branch `deploy-google-cloud`, depois de
+build, testes, Dependency-Check e Trivy: builda a imagem, publica no Artifact
+Registry e aplica os manifestos. Nas outras branches e em PR ela fica
+"skipped", o que evita gastar credito do GCP a cada merge comum. Como o gatilho
+e o proprio push, o deploy nao depende da `main` nem de merge. O Sonar (runner
+self-hosted) roda em paralelo ao deploy e nao o bloqueia. Para subir qualquer branch de
 trabalho, sem passar pela `main`:
 
 ```bash

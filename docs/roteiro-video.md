@@ -25,7 +25,7 @@ blocos, com tempo e comandos de cada cena.
 
 ## Plano B (se o CD falhar ao vivo)
 
-Se o workflow "CD (GKE)" falhar durante a gravacao, nao tente depurar ao
+Se a etapa "8. Deploy no GKE" do pipeline falhar durante a gravacao, nao tente depurar ao
 vivo: comente que isso acontece e explique a causa mais comum por nome (ex.:
 `ImagePullBackOff` por falta de `roles/artifactregistry.reader`, documentado
 em `docs/deploy-gcp.md`), mostre o deploy manual como alternativa
@@ -64,10 +64,11 @@ registry e IAM como codigo, sem clique manual no console.
 1. Mostre um Pull Request mesclado na `main` e o **CI** rodando (build,
    testes, dependency-check, trivy, sonar) — aponte os estagios na tela.
 2. Atualize a branch `deploy-google-cloud` para disparar o deploy
-   (`git push origin SUA-BRANCH:deploy-google-cloud`); o CD roda por push nessa
-   branch, sem depender da `main` e sem esperar o CI completo, de proposito,
-   pra nao gastar credito do GCP em todo merge.
-3. Workflow **CD (GKE)**: build da imagem, push no Artifact Registry e
+   (`git push origin SUA-BRANCH:deploy-google-cloud`); o deploy roda por push
+   nessa branch, sem depender da `main`, de proposito, pra nao gastar credito do
+   GCP em todo merge.
+3. No mesmo pipeline, a etapa **8. Deploy no GKE** (depois de build, testes,
+   dependency-check e trivy): build da imagem, push no Artifact Registry e
    aplicacao dos manifestos.
 4. Terminal, acompanhando o rollout:
    ```bash
