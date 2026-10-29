@@ -1,17 +1,16 @@
 name: CD (GKE)
 
-# Entrega continua: so depois que o CI da branch deploy-google-cloud passar
-# com sucesso, builda a imagem, publica no Artifact Registry e faz o deploy
-# no GKE. Deploy nao acontece em merge na main — so em merge/push na
-# deploy-google-cloud, pra dar controle explicito de quando sobe pra nuvem.
+# Entrega continua independente da main: todo push na branch deploy-google-cloud
+# roda os testes, builda a imagem, publica no Artifact Registry e faz o deploy
+# no GKE. Como o gatilho e o proprio push, o workflow vale a partir do commit
+# da branch (nao precisa estar na main, ao contrario do gatilho workflow_run) e
+# nao espera o CI completo (Dependency-Check, Trivy, Sonar), que e lento.
 # A autenticacao e' por Workload Identity Federation (sem chave JSON de
 # service account). Enquanto as variaveis do GCP nao estiverem cadastradas,
-# o job fica "skipped".
+# o job de deploy fica "skipped".
 
 on:
-  workflow_run:
-    workflows: [CI]
-    types: [completed]
+  push:
     branches: [deploy-google-cloud]
   workflow_dispatch:
 
@@ -24,9 +23,27 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  test:
+    name: Testes automatizados
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Testes (unitarios e integracao)
+        run: mvn -B test
+
   deploy:
     name: Build, push e deploy no GKE
-    if: ${{ vars.GCP_PROJECT_ID != '' && (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success') }}
+    needs: test
+    if: ${{ vars.GCP_PROJECT_ID != '' }}
     runs-on: ubuntu-latest
     env:
       PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
@@ -36,10 +53,8 @@ jobs:
       MAIL_FROM: ${{ vars.MAIL_FROM }}
       IMAGE: ${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/oficina/oficina-mecanica-api
     steps:
-      - name: Checkout (commit que passou no CI)
+      - name: Checkout (commit que passou nos testes)
         uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Autenticar no Google Cloud (Workload Identity Federation)
         uses: google-github-actions/auth@v2
@@ -57,7 +72,7 @@ jobs:
 
       - name: Build e push da imagem
         run: |
-          TAG="${{ github.event.workflow_run.head_sha || github.sha }}"
+          TAG="${{ github.sha }}"
           docker build -t "${IMAGE}:${TAG}" -t "${IMAGE}:latest" .
           docker push "${IMAGE}:${TAG}"
           docker push "${IMAGE}:latest"

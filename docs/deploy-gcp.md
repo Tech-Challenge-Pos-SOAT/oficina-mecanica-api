@@ -49,17 +49,21 @@ nao devem ser reaproveitadas.
 
 ## 4. Primeiro deploy
 
-O deploy no GKE nao acontece em merge na `main` — so em push/merge na branch
-`deploy-google-cloud` (ou disparo manual). Isso evita gastar credito do GCP a
-cada merge comum. Para subir a versao atual:
+O deploy no GKE nao depende da `main` nem de merge: todo push na branch
+`deploy-google-cloud` dispara o workflow "CD (GKE)", que roda os testes, builda
+a imagem, publica no Artifact Registry e aplica os manifestos. O gatilho e o
+proprio push, entao o `cd.yml` vale a partir do commit da branch (um gatilho
+`workflow_run` exigiria o arquivo na `main`) e o deploy nao espera o CI
+completo (Dependency-Check, Trivy e Sonar, que sao lentos). Isso tambem evita
+gastar credito do GCP a cada merge comum. Para subir qualquer branch de
+trabalho, sem passar pela `main`:
 
 ```bash
-git push origin main:deploy-google-cloud
+git push origin SUA-BRANCH:deploy-google-cloud
+# se a deploy-google-cloud ja existir e estiver atras, use --force-with-lease
 ```
 
-O CI roda nessa branch e, se passar, o workflow "CD (GKE)" builda a imagem,
-publica no Artifact Registry e aplica os manifestos. Tambem da para disparar
-manualmente em Actions, "CD (GKE)", Run workflow. Acompanhe e pegue o IP:
+Acompanhe e pegue o IP:
 
 ```bash
 gcloud container clusters get-credentials oficina-cluster --region us-central1

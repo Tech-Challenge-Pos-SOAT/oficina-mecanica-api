@@ -64,8 +64,9 @@ registry e IAM como codigo, sem clique manual no console.
 1. Mostre um Pull Request mesclado na `main` e o **CI** rodando (build,
    testes, dependency-check, trivy, sonar) — aponte os estagios na tela.
 2. Atualize a branch `deploy-google-cloud` para disparar o deploy
-   (`git push origin main:deploy-google-cloud`); o CD so roda nessa branch,
-   de proposito, pra nao gastar credito do GCP em todo merge na `main`.
+   (`git push origin SUA-BRANCH:deploy-google-cloud`); o CD roda por push nessa
+   branch, sem depender da `main` e sem esperar o CI completo, de proposito,
+   pra nao gastar credito do GCP em todo merge.
 3. Workflow **CD (GKE)**: build da imagem, push no Artifact Registry e
    aplicacao dos manifestos.
 4. Terminal, acompanhando o rollout:

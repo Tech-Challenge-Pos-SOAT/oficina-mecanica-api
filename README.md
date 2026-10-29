@@ -193,9 +193,10 @@ terraform apply
 
 Os manifestos ficam em [`k8s/`](k8s/) (namespace, ServiceAccount, ConfigMap,
 Secret, Deployment com sidecar Cloud SQL Auth Proxy, Service LoadBalancer, HPA
-2-5 replicas, PDB). O CD so dispara em push/merge na branch
-`deploy-google-cloud` (`git push origin main:deploy-google-cloud`) ou
-manualmente em Actions; para validar pelo Cloud Shell:
+2-5 replicas, PDB). O CD (testes, build da imagem, push e
+deploy) dispara em todo push na branch `deploy-google-cloud`, sem depender da
+`main` (`git push origin SUA-BRANCH:deploy-google-cloud`); para validar pelo
+Cloud Shell:
 
 ```bash
 export DB_PASSWORD='a-mesma-senha-do-terraform'
