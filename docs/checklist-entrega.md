@@ -8,8 +8,8 @@ verificado nos arquivos reais do repositorio nesta sessao (28/10/2026, branch
 
 - [x] Codigo refatorado para a Fase 2 (listagem por status/idade, abertura de
   OS com servicos e pecas, Actuator, ShedLock, e-mail via Brevo).
-- [x] Testes automatizados: `mvn test` — **495 testes, 0 falhas, 0 erros, 0
-  skipped** (resultado real, rodado nesta sessao; Testcontainers via Docker).
+- [x] Testes automatizados: `mvn test` — **499 testes, 0 falhas, 0 erros, 0
+  skipped** (resultado real do CI, 29/10/2026; cobertura JaCoCo de linhas 95,6%).
 - [x] As cinco APIs do dominio presentes: Clientes (`/api/customers`),
   Veiculos (`/api/vehicles`), Materiais (`/api/materials`), Servicos
   (`/api/services`), Ordem de Servico (`/api/service-orders` +
@@ -21,7 +21,7 @@ verificado nos arquivos reais do repositorio nesta sessao (28/10/2026, branch
 - [x] `Dockerfile` e `docker-compose.yml` na raiz.
 - [x] `/k8s` com `namespace.yaml`, `serviceaccount.yaml`, `configmap.yaml`,
   `secret.example.yaml`, `deployment.yaml` (sidecar Cloud SQL Auth Proxy),
-  `service.yaml` (LoadBalancer), `hpa.yaml` (2 a 5 replicas, CPU 60%),
+  `service.yaml` (LoadBalancer), `hpa.yaml` (2 a 5 replicas, CPU 60% e memoria 85%),
   `pdb.yaml`, `kustomization.yaml`.
 
 ## Infraestrutura
@@ -37,7 +37,10 @@ verificado nos arquivos reais do repositorio nesta sessao (28/10/2026, branch
 - [x] CD (etapa 8 do `.github/workflows/ci.yml`, so na branch
   `deploy-google-cloud`): build e push da imagem no Artifact Registry, deploy no
   cluster (Secret a partir de GitHub Secrets, apply dos manifestos, rollout
-  status) — autenticado via Workload Identity Federation.
+  status) — autenticado via Workload Identity Federation. O banco: a instancia
+  Cloud SQL vem do Terraform (criada uma vez) e o schema e implantado em cada
+  deploy pelo Flyway na subida da aplicacao (ver README, "Banco de dados no
+  fluxo de deploy").
 
 ## Documentacao
 

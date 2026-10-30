@@ -1,0 +1,39 @@
+flowchart TB
+    U[Cliente / Atendente] -->|HTTP| LB
+
+    subgraph GH[GitHub Actions - ci.yml unico]
+        direction TB
+        CI[Etapas 1 a 7<br/>build, testes, dependency-check,<br/>trivy, sonar, relatorio]
+        CD[Etapa 8 - deploy<br/>so na branch deploy-google-cloud<br/>build e push da imagem, kubectl apply]
+        CI --> CD
+    end
+
+    subgraph GKE[GKE Autopilot - namespace oficina]
+        direction TB
+        LB[Service LoadBalancer<br/>IP publico]
+        CM[ConfigMap e Secret]
+        HPA[HPA<br/>CPU 60% e memoria 85%]
+        subgraph DEP[Deployment - 2 a 5 replicas]
+            POD[Pod<br/>API Spring Boot + Cloud SQL Auth Proxy]
+        end
+        LB --> POD
+        CM --> POD
+        HPA -.escala.-> DEP
+    end
+
+    SQL[(Cloud SQL<br/>PostgreSQL 16)]
+    AR[Artifact Registry<br/>repositorio oficina]
+    WIF[Workload Identity Federation<br/>sem chave JSON]
+    BR[Brevo<br/>e-mail de status ao cliente]
+    TF[Terraform - infra/<br/>estado remoto no GCS]
+
+    CD -->|autentica via| WIF
+    WIF -->|push da imagem| AR
+    WIF -->|kubectl apply| GKE
+    AR -->|pull da imagem| GKE
+    POD -->|IAM + TLS<br/>Flyway aplica as migrations| SQL
+    POD -.SMTP.-> BR
+    TF -->|provisiona| GKE
+    TF -->|provisiona| SQL
+    TF -->|provisiona| AR
+    TF -->|provisiona| WIF

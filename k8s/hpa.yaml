@@ -1,4 +1,5 @@
-# Escala de 2 a 5 replicas quando a CPU media passa de 60% do request.
+# Escala de 2 a 5 replicas quando a CPU media passa de 60% ou a memoria media
+# passa de 85% do request (o que ocorrer primeiro; vale a maior replica pedida).
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
@@ -18,6 +19,12 @@ spec:
         target:
           type: Utilization
           averageUtilization: 60
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 85
   behavior:
     scaleUp:
       stabilizationWindowSeconds: 0

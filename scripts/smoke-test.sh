@@ -10,6 +10,13 @@
 #   scripts/smoke-test.sh http://IP_EXTERNO [email-do-cliente]
 #   PAUSE=1 scripts/smoke-test.sh http://IP_EXTERNO seu@email.com   # pausa a cada passo (video)
 #   REJECT=1 scripts/smoke-test.sh ...                              # tambem testa a recusa (2a OS)
+#   QUICK=1  scripts/smoke-test.sh ...                              # pula a prova de ordenacao (menos OS e e-mails)
+#
+# O que cobre: saude, login/JWT, 401, cliente, abertura da OS (servico + peca),
+# diagnostico, orcamento, consulta publica, listagem ordenada por prioridade
+# (prova com 4 OS em estados diferentes), filtro por status, baixa e devolucao
+# de estoque, aprovacao, finalizacao, entrega, historico e os erros esperados
+# (404, 409, 400). Dispara os e-mails de status para o cliente informado.
 #
 # Requisitos: bash, curl e python3 (para ler o JSON). Nao usa jq.
 # Efeito colateral: troca o e-mail do cliente do seed (529.982.247-25, Maria)
@@ -26,6 +33,7 @@ EMPLOYEE_PASSWORD="${EMPLOYEE_PASSWORD:-senha123}"
 MATERIAL_ID="${MATERIAL_ID:-1}"
 PAUSE="${PAUSE:-0}"
 REJECT="${REJECT:-0}"
+QUICK="${QUICK:-0}"
 
 BODY_FILE="$(mktemp)"
 trap 'rm -f "$BODY_FILE"' EXIT
@@ -56,6 +64,19 @@ call() {
   local code
   code="$(curl "${args[@]}")"
   [ "$code" = "$expected" ] || fail "$method $path devolveu HTTP $code (esperado $expected)"
+}
+
+# try METODO CAMINHO [JSON] -> melhor esforco (limpeza), nunca derruba o teste
+try() {
+  local method="$1" path="$2" data="${3:-}"
+  local args=(-s -o /dev/null -X "$method" "$BASE_URL$path" -H 'Content-Type: application/json' -H "Authorization: Bearer $TOKEN")
+  if [ -n "$data" ]; then args+=(-d "$data"); fi
+  curl "${args[@]}" || true
+}
+
+stock() {
+  call GET "/api/materials/$MATERIAL_ID" 200
+  json stockQuantity
 }
 
 expect_field() {
@@ -142,6 +163,59 @@ print("    ordem dos status:", [o["status"] for o in orders])
 PY
 ok "listagem ordenada e sem FINISHED/DELIVERED"
 
+if [ "$QUICK" != "1" ]; then
+  step "9b. Prova de ordenacao e estoque: mais 3 OS, uma em cada estado"
+  STOCK_BEFORE="$(stock)"
+  new_order; ORDER_RECEIVED="$ORDER_ID"
+  new_order; ORDER_DIAG="$ORDER_ID"
+  call POST "/api/service-orders/$ORDER_DIAG/diagnosis" 200 "{\"employeeId\":$EMPLOYEE_ID}"
+  new_order; ORDER_EXEC="$ORDER_ID"
+  call POST "/api/service-orders/$ORDER_EXEC/diagnosis" 200 "{\"employeeId\":$EMPLOYEE_ID}"
+  call POST "/api/service-orders/$ORDER_EXEC/budget" 200 "{\"employeeId\":$EMPLOYEE_ID}"
+  call POST "/public/service-orders/$ORDER_EXEC/approval" 200 "{\"customerDocument\":\"$DOCUMENT\",\"approved\":true}"
+  expect_field status IN_EXECUTION
+  STOCK_AFTER="$(stock)"
+  [ "$STOCK_AFTER" = "$((STOCK_BEFORE - 1))" ] || fail "estoque deveria cair 1 na aprovacao (antes $STOCK_BEFORE, depois $STOCK_AFTER)"
+  ok "aprovacao baixou 1 un. do estoque ($STOCK_BEFORE -> $STOCK_AFTER)"
+
+  call GET /api/service-orders 200
+  python3 - "$BODY_FILE" "$ORDER_EXEC" "$ORDER_A" "$ORDER_DIAG" "$ORDER_RECEIVED" <<'PY'
+import json, sys
+orders = [o["id"] for o in json.load(open(sys.argv[1]))]
+expected = [int(x) for x in sys.argv[2:]]   # EXECUCAO, AGUARDANDO, DIAGNOSTICO, RECEBIDA
+missing = [i for i in expected if i not in orders]
+if missing:
+    sys.exit("OS ausentes da listagem: %s" % missing)
+got = [i for i in orders if i in expected]
+if got != expected:
+    sys.exit("ordem errada: esperado %s, veio %s" % (expected, got))
+print("    ordem confirmada (execucao > aguardando > diagnostico > recebida):", got)
+PY
+  ok "4 OS em estados diferentes saem na ordem de prioridade"
+
+  call GET "/api/service-orders?status=AWAITING_APPROVAL" 200
+  python3 - "$BODY_FILE" "$ORDER_A" <<'PY'
+import json, sys
+orders = json.load(open(sys.argv[1]))
+if any(o["status"] != "AWAITING_APPROVAL" for o in orders):
+    sys.exit("filtro por status trouxe outro status")
+if int(sys.argv[2]) not in [o["id"] for o in orders]:
+    sys.exit("OS esperada nao veio no filtro")
+PY
+  ok "filtro ?status=AWAITING_APPROVAL devolve so esse status"
+
+  call GET "/api/service-orders?status=NAO_EXISTE" 400
+  ok "status invalido devolve 400"
+
+  # Limpeza: cancela as 3 OS de apoio (a em execucao devolve a peca ao estoque).
+  for id in "$ORDER_EXEC" "$ORDER_DIAG" "$ORDER_RECEIVED"; do
+    try POST "/api/service-orders/$id/cancellation" "{\"employeeId\":$EMPLOYEE_ID,\"reason\":\"Limpeza do teste de fumaca\"}"
+  done
+  STOCK_RESTORED="$(stock)"
+  [ "$STOCK_RESTORED" = "$STOCK_BEFORE" ] || fail "cancelamento deveria devolver a peca (esperado $STOCK_BEFORE, veio $STOCK_RESTORED)"
+  ok "cancelamento devolveu a peca ao estoque ($STOCK_RESTORED)"
+fi
+
 step "10. Aprovacao do orcamento pelo cliente (E-MAIL 2: orcamento aprovado)"
 call POST "/public/service-orders/$ORDER_A/approval" 200 "{\"customerDocument\":\"$DOCUMENT\",\"approved\":true}"
 expect_field status IN_EXECUTION
@@ -165,6 +239,27 @@ if int(sys.argv[2]) in ids:
 PY
 ok "OS $ORDER_A fora da listagem"
 
+step "13b. Historico da OS registra cada transicao"
+call GET "/api/service-orders/$ORDER_A" 200
+python3 - "$BODY_FILE" <<'PY'
+import json, sys
+h = [x["status"] for x in json.load(open(sys.argv[1]))["history"]]
+need = ["IN_DIAGNOSIS", "AWAITING_APPROVAL", "IN_EXECUTION", "FINISHED", "DELIVERED"]
+missing = [n for n in need if n not in h]
+if missing:
+    sys.exit("historico sem as transicoes %s (veio %s)" % (missing, h))
+print("    historico:", h)
+PY
+ok "historico completo"
+
+step "13c. Erros esperados da API"
+call GET /api/service-orders/999999999 404
+ok "OS inexistente devolve 404"
+call POST "/api/service-orders/$ORDER_A/delivery" 409 "{\"employeeId\":$EMPLOYEE_ID}"
+ok "segunda entrega da mesma OS devolve 409"
+call POST "/api/service-orders/$ORDER_A/services" 409 "{\"serviceId\":1,\"employeeId\":$EMPLOYEE_ID}"
+ok "adicionar servico a OS entregue devolve 409"
+
 if [ "$REJECT" = "1" ]; then
   step "14. Segunda OS: orcamento recusado (E-MAIL 4: orcamento recusado)"
   new_order
@@ -179,4 +274,5 @@ fi
 echo
 echo "=== Fumaca OK: $PASS verificacoes passaram. ==="
 echo "Confira a caixa de entrada (e o spam) de $CLIENT_EMAIL: devem chegar os e-mails"
-echo "'Ordem de servico $ORDER_A: AWAITING_APPROVAL', 'IN_EXECUTION' e 'FINISHED'."
+echo "'Oficina Mecanica | OS n $ORDER_A: ...' (orcamento pronto, aprovado, concluido"
+echo "e, com REJECT=1, recusado). Sem QUICK=1 chegam tambem os e-mails das OS de apoio."

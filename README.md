@@ -150,7 +150,7 @@ flowchart LR
     subgraph GKE[GKE Autopilot - namespace oficina]
         LB --> P1[Pod 1<br/>API + Cloud SQL Proxy]
         LB --> P2[Pod 2..5<br/>API + Cloud SQL Proxy]
-        HPA[HPA<br/>CPU 60%] -.escala.-> P2
+        HPA[HPA<br/>CPU 60% / mem 85%] -.escala.-> P2
     end
     P1 -->|IAM + TLS| SQL[(Cloud SQL<br/>PostgreSQL 16)]
     P2 -->|IAM + TLS| SQL
@@ -189,11 +189,22 @@ terraform init -backend-config="bucket=SEU_PROJECT_ID-tfstate"
 terraform apply
 ```
 
+### Banco de dados no fluxo de deploy
+
+O banco e tratado em duas camadas. A **instancia** Cloud SQL (PostgreSQL 16) e
+criada uma unica vez pelo Terraform em `infra/`, porque tem ciclo de vida
+proprio e nao deve ser recriada a cada deploy (isso apagaria os dados). O
+**schema e os dados iniciais** sao implantados pelo pipeline: a cada push na
+`deploy-google-cloud` a etapa 8 sobe a nova versao e o Flyway, ao iniciar a
+aplicacao, aplica as migrations pendentes (`src/main/resources/db/migration`)
+no Cloud SQL via Auth Proxy. O `rollout status` so conclui quando os Pods
+passam na readiness, que inclui a conexao com o banco.
+
 ### Deploy em Kubernetes
 
 Os manifestos ficam em [`k8s/`](k8s/) (namespace, ServiceAccount, ConfigMap,
 Secret, Deployment com sidecar Cloud SQL Auth Proxy, Service LoadBalancer, HPA
-2-5 replicas, PDB). A etapa 8 do pipeline (build da imagem, push e
+2-5 replicas por CPU e memoria, PDB). A etapa 8 do pipeline (build da imagem, push e
 deploy, no mesmo `ci.yml`) roda em todo push na branch `deploy-google-cloud`, sem
 depender da `main` (`git push origin SUA-BRANCH:deploy-google-cloud`); para validar pelo
 Cloud Shell:
@@ -217,7 +228,7 @@ usuarios virtuais simultaneos:
 
 | Metrica | Resultado |
 |---|---|
-| Replicas | 2 → 5 (HPA, CPU alvo 60%) |
+| Replicas | 2 → 5 (HPA, CPU alvo 60% e memoria 85%) |
 | Tempo para atingir 5 replicas | ~1 minuto |
 | CPU no pico | 269% do alvo |
 | Requisicoes com falha | 0% |

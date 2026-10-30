@@ -57,7 +57,10 @@ Mostre o diagrama de `docs/arquitetura.md`, depois os recursos no console:
    Cloud SQL Auth Proxy no mesmo Pod).
 
 Fale: tudo isso nasceu do `terraform apply` em `infra/` — cluster, banco,
-registry e IAM como codigo, sem clique manual no console.
+registry e IAM como codigo, sem clique manual no console. Sobre o banco: a
+instancia Cloud SQL e criada uma vez pelo Terraform (nao se recria a cada
+deploy, para nao perder dados); o schema e implantado em todo deploy pelo
+Flyway, que aplica as migrations pendentes quando a aplicacao sobe.
 
 ### (b) 04:00 - 07:30 - Execucao do CI/CD
 

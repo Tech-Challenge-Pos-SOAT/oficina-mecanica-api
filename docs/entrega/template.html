@@ -71,7 +71,10 @@
     <h3>Cloud SQL (PostgreSQL 16)</h3>
     <p>Banco gerenciado com backup automatico, separado do ciclo de vida do
     cluster. Evita manter estado dentro do Kubernetes e permite recriar o
-    cluster sem perder dados.</p>
+    cluster sem perder dados. A instancia e criada pelo Terraform; o schema e
+    os dados iniciais sao implantados a cada deploy pelo Flyway, que roda na
+    subida da aplicacao e aplica as migrations pendentes via Cloud SQL Auth
+    Proxy.</p>
   </div>
 
   <div class="recurso">
@@ -90,7 +93,7 @@
   <div class="recurso">
     <h3>HPA (Horizontal Pod Autoscaler)</h3>
     <p>Escala o Deployment de 2 a 5 replicas com base no uso de CPU (alvo
-    60%), atendendo ao requisito de escalabilidade automatica do desafio e
+    60%) e de memoria (alvo 85%), atendendo ao requisito de escalabilidade automatica do desafio e
     validado com teste de carga via k6.</p>
   </div>
 
