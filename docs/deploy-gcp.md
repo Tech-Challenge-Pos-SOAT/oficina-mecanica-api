@@ -164,3 +164,22 @@ BASE_URL=http://IP_EXTERNO k6 run load-test/hpa-load.js
 # para o video, carga menor e threshold mais tolerante ao hash de senha do login
 BASE_URL=http://IP_EXTERNO k6 run -e PEAK_VUS=60 -e P95_MS=3000 load-test/hpa-load.js
 ```
+
+## Teste de fumaca ponta a ponta (e e-mails)
+
+`scripts/smoke-test.sh` percorre o fluxo completo da OS contra um ambiente no ar
+e falha se qualquer passo devolver codigo ou status inesperado: health, login,
+401 sem token, abertura da OS com servico e peca, diagnostico, orcamento,
+consulta publica, listagem ordenada, aprovacao, finalizacao, entrega e saida da
+listagem. Ele aponta o e-mail do cliente do seed (Maria, 529.982.247-25) para o
+e-mail informado, entao os avisos de status chegam nessa caixa:
+
+```bash
+scripts/smoke-test.sh http://IP_EXTERNO kawanmelofernandes@gmail.com
+PAUSE=1 scripts/smoke-test.sh http://IP_EXTERNO seu@email.com   # pausa a cada passo (video)
+REJECT=1 scripts/smoke-test.sh http://IP_EXTERNO seu@email.com  # inclui a recusa do orcamento
+```
+
+Os e-mails saem do remetente `MAIL_FROM` (precisa estar validado no Brevo).
+Se nao chegarem, olhe a caixa de spam e os logs:
+`kubectl -n oficina logs -l app=oficina-api -c api --tail=100 | grep -i mail`.
