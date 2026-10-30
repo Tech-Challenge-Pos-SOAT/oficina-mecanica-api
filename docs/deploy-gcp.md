@@ -170,14 +170,17 @@ BASE_URL=http://IP_EXTERNO k6 run -e PEAK_VUS=60 -e P95_MS=3000 load-test/hpa-lo
 `scripts/smoke-test.sh` percorre o fluxo completo da OS contra um ambiente no ar
 e falha se qualquer passo devolver codigo ou status inesperado: health, login,
 401 sem token, abertura da OS com servico e peca, diagnostico, orcamento,
-consulta publica, listagem ordenada, aprovacao, finalizacao, entrega e saida da
-listagem. Ele aponta o e-mail do cliente do seed (Maria, 529.982.247-25) para o
+consulta publica, listagem ordenada (provada com 4 OS em estados diferentes),
+filtro por status, baixa e devolucao de estoque, aprovacao, finalizacao, entrega,
+historico e os erros esperados (404, 409, 400). Os e-mails de status saem em
+portugues, com o resumo da OS, itens, valores e proximos passos. Ele aponta o e-mail do cliente do seed (Maria, 529.982.247-25) para o
 e-mail informado, entao os avisos de status chegam nessa caixa:
 
 ```bash
 scripts/smoke-test.sh http://IP_EXTERNO kawanmelofernandes@gmail.com
 PAUSE=1 scripts/smoke-test.sh http://IP_EXTERNO seu@email.com   # pausa a cada passo (video)
 REJECT=1 scripts/smoke-test.sh http://IP_EXTERNO seu@email.com  # inclui a recusa do orcamento
+QUICK=1 scripts/smoke-test.sh http://IP_EXTERNO seu@email.com   # versao curta, sem a prova de ordenacao/estoque (3 OS a menos)
 ```
 
 Os e-mails saem do remetente `MAIL_FROM` (precisa estar validado no Brevo).
