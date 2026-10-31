@@ -10,6 +10,7 @@ import com.postech.oficinamecanica.domain.service.Service;
 import com.postech.oficinamecanica.domain.serviceorder.ServiceOrder;
 import com.postech.oficinamecanica.domain.serviceorder.ServiceOrderMaterial;
 import com.postech.oficinamecanica.domain.serviceorder.ServiceOrderService;
+import com.postech.oficinamecanica.domain.serviceorder.ServiceOrderStatus;
 import com.postech.oficinamecanica.domain.vehicle.Vehicle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
