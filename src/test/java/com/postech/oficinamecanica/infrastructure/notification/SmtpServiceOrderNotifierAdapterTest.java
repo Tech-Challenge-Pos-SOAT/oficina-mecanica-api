@@ -122,7 +122,22 @@ class SmtpServiceOrderNotifierAdapterTest {
 
         SimpleMailMessage message = sent();
         assertThat(message.getSubject()).contains("recusado");
-        assertThat(message.getText()).contains("Motivo informado: Preco alto");
+        assertThat(message.getText()).contains("Motivo informado: Preco alto")
+            .contains("Encerrada sem execução")
+            .doesNotContain("pronta para retirada");
+    }
+
+    @Test
+    void shouldExplainThatServiceContinuesWhenOnlyAdditionalBudgetIsRejected() {
+        ServiceOrder order = order();
+        order.approveBudget();
+
+        notifier.notifyBudgetRejected(order, customer(), "Nao preciso");
+
+        assertThat(sent().getText())
+            .contains("orçamento adicional")
+            .contains("Em execução")
+            .contains("continua em andamento");
     }
 
     @Test
