@@ -1,0 +1,16 @@
+.git
+.github
+.claude
+.idea
+*.iml
+target
+docs
+k8s
+infra
+scripts
+load-test
+*.md
+.env
+.DS_Store
+Dockerfile
+docker-compose.yml

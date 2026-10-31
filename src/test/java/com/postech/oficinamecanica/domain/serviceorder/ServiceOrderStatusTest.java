@@ -65,4 +65,27 @@ class ServiceOrderStatusTest {
         assertThatThrownBy(() -> ServiceOrderStatus.fromValue("CANCELADA"))
             .isInstanceOf(InvalidServiceOrderStatusException.class);
     }
+
+    @Test
+    void shouldConsiderClosedStatusesAsNotActive() {
+        assertThat(ServiceOrderStatus.RECEIVED.isActive()).isTrue();
+        assertThat(ServiceOrderStatus.IN_DIAGNOSIS.isActive()).isTrue();
+        assertThat(ServiceOrderStatus.AWAITING_APPROVAL.isActive()).isTrue();
+        assertThat(ServiceOrderStatus.IN_EXECUTION.isActive()).isTrue();
+        assertThat(ServiceOrderStatus.FINISHED.isActive()).isFalse();
+        assertThat(ServiceOrderStatus.DELIVERED.isActive()).isFalse();
+        assertThat(ServiceOrderStatus.CANCELLED.isActive()).isFalse();
+    }
+
+    @Test
+    void shouldRankExecutionAheadOfApprovalDiagnosisAndReceived() {
+        assertThat(ServiceOrderStatus.IN_EXECUTION.priority())
+            .isLessThan(ServiceOrderStatus.AWAITING_APPROVAL.priority());
+        assertThat(ServiceOrderStatus.AWAITING_APPROVAL.priority())
+            .isLessThan(ServiceOrderStatus.IN_DIAGNOSIS.priority());
+        assertThat(ServiceOrderStatus.IN_DIAGNOSIS.priority())
+            .isLessThan(ServiceOrderStatus.RECEIVED.priority());
+        assertThat(ServiceOrderStatus.RECEIVED.priority())
+            .isLessThan(ServiceOrderStatus.FINISHED.priority());
+    }
 }

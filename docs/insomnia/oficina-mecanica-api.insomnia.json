@@ -293,7 +293,7 @@
       "_type": "request",
       "parentId": "fld_3",
       "name": "06 · POST /api/service-orders (abertura)",
-      "description": "Identifica cliente por CPF/CNPJ e veiculo pela placa. Esperado 201, RECEIVED, price nulo. Anote o id em 'orderId'.",
+      "description": "Identifica cliente por CPF/CNPJ e veiculo pela placa. Esperado 201, RECEIVED, price nulo. Anote o id em 'orderId'. Opcionalmente aceita 'serviceIds' e 'materials' (veja a requisicao 06b).",
       "method": "POST",
       "url": "{{ _.baseUrl }}/api/service-orders",
       "headers": [
@@ -315,6 +315,64 @@
         "mimeType": "application/json",
         "text": "{\n  \"customerDocument\": \"{{ _.document }}\",\n  \"plate\": \"{{ _.plate }}\",\n  \"employeeId\": \"{{ _.employeeId }}\"\n}"
       },
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "req_06b",
+      "_type": "request",
+      "parentId": "fld_3",
+      "name": "06b · POST /api/service-orders (abertura com servicos e pecas)",
+      "description": "Mesma abertura, ja incluindo servicos do catalogo e pecas. Esperado 201, RECEIVED, price = soma dos itens (precos copiados do catalogo). Nao altera estoque. Qualquer item inexistente ou inativo derruba a abertura inteira (404/422), sem criar a OS.",
+      "method": "POST",
+      "url": "{{ _.baseUrl }}/api/service-orders",
+      "headers": [
+        {
+          "name": "Content-Type",
+          "value": "application/json"
+        }
+      ],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -10999,
+      "body": {
+        "mimeType": "application/json",
+        "text": "{\n  \"customerDocument\": \"{{ _.document }}\",\n  \"plate\": \"{{ _.plate }}\",\n  \"employeeId\": \"{{ _.employeeId }}\",\n  \"serviceIds\": [{{ _.serviceId }}],\n  \"materials\": [\n    { \"materialId\": {{ _.materialId }}, \"quantity\": 1 }\n  ]\n}"
+      },
+      "authentication": {
+        "type": "bearer",
+        "token": "{{ _.token }}",
+        "prefix": ""
+      }
+    },
+    {
+      "_id": "req_06c",
+      "_type": "request",
+      "parentId": "fld_3",
+      "name": "06c · GET /api/service-orders (fila por prioridade)",
+      "description": "Sem filtro: so' ordens em aberto (exclui FINISHED, DELIVERED e CANCELLED), por prioridade IN_EXECUTION > AWAITING_APPROVAL > IN_DIAGNOSIS > RECEIVED e, dentro da prioridade, mais antiga primeiro. Com ?status=FINISHED devolve exatamente aquele status.",
+      "method": "GET",
+      "url": "{{ _.baseUrl }}/api/service-orders",
+      "headers": [],
+      "parameters": [],
+      "isPrivate": false,
+      "settingStoreCookies": true,
+      "settingSendCookies": true,
+      "settingDisableRenderRequestBody": false,
+      "settingEncodeUrl": true,
+      "settingRebuildPath": true,
+      "settingFollowRedirects": "global",
+      "metaSortKey": -10998,
+      "body": {},
       "authentication": {
         "type": "bearer",
         "token": "{{ _.token }}",

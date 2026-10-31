@@ -32,6 +32,14 @@ services:
       DOCKER_COMPOSE_ENABLED: "false"
       # Segredo de assinatura do JWT. Trocar por um valor real fora de dev.
       JWT_SECRET: ${JWT_SECRET:-dev-only-oficina-mecanica-api-jwt-signing-secret-32bytes}
+      # SMTP da Brevo para notificar o cliente por e-mail a cada mudanca de
+      # status da ordem de servico. Sem BREVO_SMTP_USERNAME/PASSWORD validos
+      # o envio falha e so' fica logado - a ordem continua funcionando normal.
+      BREVO_SMTP_HOST: ${BREVO_SMTP_HOST:-smtp-relay.brevo.com}
+      BREVO_SMTP_PORT: ${BREVO_SMTP_PORT:-587}
+      BREVO_SMTP_USERNAME: ${BREVO_SMTP_USERNAME}
+      BREVO_SMTP_PASSWORD: ${BREVO_SMTP_PASSWORD}
+      MAIL_FROM: ${MAIL_FROM}
     ports:
       - "8080:8080"
 

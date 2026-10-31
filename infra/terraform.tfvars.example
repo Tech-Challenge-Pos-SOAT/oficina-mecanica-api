@@ -1,0 +1,5 @@
+# Copie para terraform.tfvars (ignorado pelo git) e ajuste.
+project_id        = "seu-project-id"
+region            = "us-central1"
+github_repository = "seu-usuario/oficina-mecanica-api"
+# A senha do banco vai por variavel de ambiente: export TF_VAR_db_password='...'

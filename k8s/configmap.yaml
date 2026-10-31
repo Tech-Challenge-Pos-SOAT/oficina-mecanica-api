@@ -1,0 +1,18 @@
+# Configuracao nao sensivel. O banco e' acessado em 127.0.0.1:5432 porque o
+# Cloud SQL Auth Proxy roda como sidecar no mesmo Pod.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oficina-api-config
+  namespace: oficina
+data:
+  DB_URL: jdbc:postgresql://127.0.0.1:5432/oficina_mecanica
+  DB_USERNAME: oficina
+  # Dentro do cluster nao existe docker-compose: sem isso o
+  # spring-boot-docker-compose tenta subir containers e a aplicacao nao inicia.
+  DOCKER_COMPOSE_ENABLED: "false"
+  BREVO_SMTP_HOST: smtp-relay.brevo.com
+  BREVO_SMTP_PORT: "587"
+  MAIL_FROM: seu-email-remetente@exemplo.com
+  # Valor usado pelo sidecar (projeto:regiao:instancia). Trocado pelo pipeline.
+  INSTANCE_CONNECTION_NAME: __INSTANCE_CONNECTION_NAME__

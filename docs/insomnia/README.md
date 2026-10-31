@@ -1,7 +1,7 @@
 # Coleção do Insomnia — fluxo da Ordem de Serviço
 
 Importe `oficina-mecanica-api.insomnia.json` em **Insomnia > Import > From File**.
-A coleção tem 24 requisições em 5 pastas, na ordem de execução.
+A coleção tem 29 requisições em 5 pastas, na ordem de execução.
 
 ## Ambientes
 
@@ -39,7 +39,8 @@ O Flyway já cria o schema e semeia dados: 5 clientes (V2), 7 materiais (V3_1 e 
 
 | Requisição | HTTP | Status da OS depois | Efeito colateral |
 |---|---|---|---|
-| POST /api/service-orders | 201 | `RECEIVED` | histórico ganha a 1ª entrada, `price` nulo |
+| POST /api/service-orders | 201 | `RECEIVED` | histórico ganha a 1ª entrada, `price` nulo (ou soma dos itens, se vier `serviceIds`/`materials`) |
+| GET /api/service-orders | 200 | — | só ordens em aberto, por prioridade; `?status=` filtra exato |
 | POST /{id}/diagnosis | 200 | `IN_DIAGNOSIS` | — |
 | POST /{id}/services | 200 | `IN_DIAGNOSIS` | `price` = preço do serviço |
 | POST /{id}/materials | 200 | `IN_DIAGNOSIS` | `price` soma preço × quantidade |

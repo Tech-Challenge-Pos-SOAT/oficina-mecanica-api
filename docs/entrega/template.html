@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Tech Challenge Fase 2 - Oficina Mecanica</title>
+<style>
+  @page { margin: 2cm 2cm 1.6cm 2cm; }
+  body { font-family: "Helvetica Neue", Arial, sans-serif; color: #1a1a1a; line-height: 1.5; }
+  h1 { font-size: 20pt; margin-bottom: 4pt; }
+  h2 { font-size: 15pt; border-bottom: 2px solid #333; padding-bottom: 4pt; margin-top: 0; }
+  h3 { font-size: 12pt; margin-bottom: 2pt; }
+  p { font-size: 11pt; }
+  .section { page-break-before: always; }
+  .capa { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 90vh; text-align: center; }
+  .capa h1 { font-size: 26pt; }
+  .capa .subtitulo { font-size: 14pt; color: #444; margin-bottom: 40pt; }
+  .capa .turma { font-size: 12pt; color: #444; }
+  .integrantes { margin-top: 40pt; font-size: 11pt; text-align: left; }
+  .integrantes li { margin-bottom: 4pt; list-style: none; }
+  .link-box { background: #f4f4f4; border-left: 4px solid #333; padding: 10pt 14pt; font-size: 11pt; word-break: break-all; margin: 10pt 0; }
+  .arquitetura-img { width: 100%; margin-top: 10pt; }
+  .recurso { margin-bottom: 10pt; }
+  .recurso h3 { color: #222; }
+  .video-link { font-size: 13pt; font-weight: bold; }
+</style>
+</head>
+<body>
+
+<div class="capa">
+  <h1>Oficina Mecanica API</h1>
+  <div class="subtitulo">Tech Challenge Fase 2 - Pos Tech SOAT (FIAP)</div>
+  <div class="turma">Turma 17SOAT</div>
+  <ul class="integrantes">
+    <li>[NOME COMPLETO DO INTEGRANTE 1 - RM]</li>
+    <li>[NOME COMPLETO DO INTEGRANTE 2 - RM]</li>
+    <li>[NOME COMPLETO DO INTEGRANTE 3 - RM]</li>
+    <li>[NOME COMPLETO DO INTEGRANTE 4 - RM]</li>
+    <li>[NOME COMPLETO DO INTEGRANTE 5 - RM]</li>
+  </ul>
+</div>
+
+<div class="section">
+  <h2>Repositorio</h2>
+  <p>Codigo-fonte, infraestrutura (Terraform), manifestos Kubernetes e pipeline
+  de CI/CD estao no repositorio:</p>
+  <div class="link-box">https://github.com/Tech-Challenge-Pos-SOAT/oficina-mecanica-api</div>
+  <p>O repositorio esta compartilhado com o usuario <strong>soat-architecture</strong>,
+  conforme exigido pelo enunciado.</p>
+  <p>A branch <code>main</code> concentra o codigo entregue (Dockerfile,
+  docker-compose, diretorios <code>/k8s</code> e <code>/infra</code>, workflows
+  de CI e CD, documentacao e collection de APIs em <code>docs/insomnia</code>).</p>
+</div>
+
+<div class="section">
+  <h2>Desenho da arquitetura</h2>
+  <img class="arquitetura-img" src="ARQUITETURA_IMG_SRC" alt="Diagrama de arquitetura">
+</div>
+
+<div class="section">
+  <h2>Recursos escolhidos</h2>
+
+  <div class="recurso">
+    <h3>GKE Autopilot</h3>
+    <p>Cluster Kubernetes gerenciado onde o Google opera os nos: sem
+    dimensionar ou corrigir maquinas, com metrics-server e Workload Identity
+    ja ativos por padrao. Cobranca por Pod, nao por no ocioso, o que reduz
+    custo em um ambiente de avaliacao de curta duracao.</p>
+  </div>
+
+  <div class="recurso">
+    <h3>Cloud SQL (PostgreSQL 16)</h3>
+    <p>Banco gerenciado com backup automatico, separado do ciclo de vida do
+    cluster. Evita manter estado dentro do Kubernetes e permite recriar o
+    cluster sem perder dados. A instancia e criada pelo Terraform; o schema e
+    os dados iniciais sao implantados a cada deploy pelo Flyway, que roda na
+    subida da aplicacao e aplica as migrations pendentes via Cloud SQL Auth
+    Proxy.</p>
+  </div>
+
+  <div class="recurso">
+    <h3>Artifact Registry</h3>
+    <p>Registro de imagens Docker do projeto, privado e integrado por IAM ao
+    GKE e ao pipeline, sem depender de um registry publico de terceiros.</p>
+  </div>
+
+  <div class="recurso">
+    <h3>Workload Identity Federation</h3>
+    <p>Permite que o GitHub Actions autentique no Google Cloud sem nenhuma
+    chave JSON de service account armazenada como secret: a identidade do
+    workflow e federada e restrita a este repositorio.</p>
+  </div>
+
+  <div class="recurso">
+    <h3>HPA (Horizontal Pod Autoscaler)</h3>
+    <p>Escala o Deployment de 2 a 5 replicas com base no uso de CPU (alvo
+    60%) e de memoria (alvo 85%), atendendo ao requisito de escalabilidade automatica do desafio e
+    validado com teste de carga via k6.</p>
+  </div>
+
+  <div class="recurso">
+    <h3>ShedLock</h3>
+    <p>Garante que o job de expiracao de orcamento rode em uma unica replica
+    por execucao, mesmo com o HPA mantendo varios Pods ativos ao mesmo tempo.</p>
+  </div>
+
+  <div class="recurso">
+    <h3>Brevo</h3>
+    <p>Servico SMTP usado para notificar o cliente por e-mail a cada mudanca
+    de status da ordem de servico, sem a necessidade de operar infraestrutura
+    de envio propria.</p>
+  </div>
+
+  <div class="recurso">
+    <h3>Terraform</h3>
+    <p>Toda a infraestrutura (cluster, banco, registry, IAM, federacao de
+    identidade) e definida como codigo, com estado remoto no Cloud Storage,
+    reproduzivel e destrutivel com um unico comando ao final da avaliacao.</p>
+  </div>
+</div>
+
+<div class="section">
+  <h2>Video demonstrativo</h2>
+  <p>Deploy da aplicacao, execucao do pipeline de CI/CD, consumo das APIs e
+  demonstracao da escalabilidade automatica (ate 15 minutos):</p>
+  <p class="video-link">VIDEO_URL_PLACEHOLDER</p>
+</div>
+
+</body>
+</html>
