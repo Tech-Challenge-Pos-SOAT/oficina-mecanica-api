@@ -2,9 +2,9 @@
 
 Gerado automaticamente pelo pipeline de CI (GitHub Actions) a cada push na `main`. Nao editar manualmente - o proximo push sobrescreve este arquivo.
 
-- **Gerado em:** 2026-10-30 02:10 UTC
-- **Commit analisado:** `a002918`
-- **Execucao do workflow:** https://github.com/Tech-Challenge-Pos-SOAT/oficina-mecanica-api/actions/runs/40989662642
+- **Gerado em:** 2026-10-31 00:44 UTC
+- **Commit analisado:** `72fad96`
+- **Execucao do workflow:** https://github.com/Tech-Challenge-Pos-SOAT/oficina-mecanica-api/actions/runs/41148982885
 
 ## 1. Dependencias (OWASP Dependency-Check)
 
@@ -12,70 +12,11 @@ Scan das bibliotecas/dependencias do projeto (Spring Boot, driver do Postgres, J
 
 ### Resumo por severidade
 
-| Severidade | Quantidade |
-|---|---|
-| CRITICAL | 7 |
-| HIGH | 11 |
-| MEDIUM | 40 |
-| LOW | 5 |
-| **Total** | **63** |
+_Sem dados de severidade disponiveis._
 
 ### Vulnerabilidades encontradas
 
-| Severidade | CVE | Dependencia | CVSS |
-|---|---|---|---|
-| CRITICAL | CVE-2026-47884 | `spring-core-6.2.19.jar` | 9.8 |
-| CRITICAL | CVE-2026-47890 | `spring-core-6.2.19.jar` | 9.8 |
-| CRITICAL | CVE-2026-47891 | `spring-core-6.2.19.jar` | 9.8 |
-| CRITICAL | CVE-2026-47892 | `spring-core-6.2.19.jar` | 9.8 |
-| CRITICAL | CVE-2026-59313 | `spring-core-6.2.19.jar` | 9.8 |
-| CRITICAL | CVE-2026-59283 | `spring-core-6.2.19.jar` | 9.1 |
-| CRITICAL | CVE-2026-59270 | `spring-security-crypto-6.5.11.jar` | 9.1 |
-| HIGH | CVE-2026-54291 | `postgresql-42.7.11.jar` | 5.9 |
-| HIGH | CVE-2026-47885 | `spring-core-6.2.19.jar` | 7.5 |
-| HIGH | CVE-2026-47886 | `spring-core-6.2.19.jar` | 7.5 |
-| HIGH | CVE-2026-47888 | `spring-core-6.2.19.jar` | 7.5 |
-| HIGH | CVE-2026-47889 | `spring-core-6.2.19.jar` | 7.5 |
-| HIGH | CVE-2026-47893 | `spring-core-6.2.19.jar` | 7.5 |
-| HIGH | CVE-2026-59282 | `spring-core-6.2.19.jar` | 7.5 |
-| HIGH | CVE-2026-41707 | `spring-security-crypto-6.5.11.jar` | 7.4 |
-| HIGH | CVE-2026-47841 | `spring-security-crypto-6.5.11.jar` | 7.4 |
-| HIGH | CVE-2026-116803 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | - |
-| HIGH | CVE-2026-116803 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | - |
-| MEDIUM | CVE-2025-48924 | `commons-lang3-3.17.0.jar` | 5.3 |
-| MEDIUM | CVE-2026-54515 | `jackson-databind-2.21.4.jar` | 5.3 |
-| MEDIUM | CVE-2026-34479 | `log4j-api-2.24.3.jar` | 7.5 |
-| MEDIUM | CVE-2026-34477 | `log4j-api-2.24.3.jar` | 5.9 |
-| MEDIUM | CVE-2026-49844 | `log4j-api-2.24.3.jar` | 5.9 |
-| MEDIUM | CVE-2026-47883 | `spring-core-6.2.19.jar` | 6.1 |
-| MEDIUM | CVE-2026-47887 | `spring-core-6.2.19.jar` | 6.1 |
-| MEDIUM | CVE-2026-59281 | `spring-core-6.2.19.jar` | 6.1 |
-| MEDIUM | CVE-2026-59280 | `spring-core-6.2.19.jar` | 4.3 |
-| MEDIUM | CVE-2026-47834 | `spring-data-jpa-3.5.13.jar` | 6.5 |
-| MEDIUM | CVE-2026-47842 | `spring-security-crypto-6.5.11.jar` | 6.5 |
-| MEDIUM | CVE-2026-59276 | `spring-security-crypto-6.5.11.jar` | 5.9 |
-| MEDIUM | CVE-2026-49978 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-49458 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-49459 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-41240 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65902 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65898 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 7.2 |
-| MEDIUM | CVE-2026-65899 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65900 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65901 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65903 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-66010 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-41238 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | - |
-| MEDIUM | CVE-2026-41239 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | - |
-| MEDIUM | CVE-2026-75838 | `swagger-ui-5.32.2.jar: swagger-ui-bundle.js` | - |
-| MEDIUM | CVE-2026-49978 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-49458 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-49459 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-41240 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65902 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | 6.1 |
-| MEDIUM | CVE-2026-65898 | `swagger-ui-5.32.2.jar: swagger-ui-es-bundle.js` | 7.2 |
-
-_... e mais 13 vulnerabilidade(s). Relatorio completo: artifact `dependency-check-report` (HTML/JSON) do workflow._
+_Nenhuma vulnerabilidade de dependencia encontrada (ou relatorio indisponivel)._
 
 ## 2. Imagem Docker (Trivy)
 
