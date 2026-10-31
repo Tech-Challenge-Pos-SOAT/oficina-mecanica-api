@@ -69,7 +69,7 @@ public class SmtpServiceOrderNotifierAdapter implements ServiceOrderNotifier {
             "Preparamos o orçamento do serviço no seu veículo e ele já está disponível para a sua decisão.",
             "Confira os valores acima. O reparo só começa depois da sua aprovação. Para aprovar ou "
                 + "recusar, fale com a oficina informando o número da ordem de serviço.",
-            null);
+            null, null);
     }
 
     @Override
@@ -77,16 +77,22 @@ public class SmtpServiceOrderNotifierAdapter implements ServiceOrderNotifier {
         send(order, customer, "orçamento aprovado, reparo em execução",
             "Recebemos a sua aprovação. O reparo do seu veículo já entrou em execução.",
             "Nossa equipe está cuidando do serviço. Avisaremos por e-mail assim que ele for concluído.",
-            null);
+            null, null);
     }
 
     @Override
     public void notifyBudgetRejected(ServiceOrder order, Customer customer, String reason) {
-        send(order, customer, "orçamento recusado",
-            "Registramos que você recusou o orçamento. Nenhum serviço será executado no seu veículo.",
-            "Se mudar de ideia ou quiser um novo orçamento, é só falar com a oficina informando o número "
-                + "da ordem de serviço.",
-            reason);
+        // Recusa de um reparo adicional: a ordem volta a "em execução" e o serviço original segue.
+        boolean reparoAdicional = order.getStatus() == ServiceOrderStatus.IN_EXECUTION;
+        String abertura = reparoAdicional
+            ? "Registramos que você recusou o orçamento adicional. Esse reparo extra não será executado."
+            : "Registramos que você recusou o orçamento. Nenhum serviço será executado no seu veículo.";
+        String proximoPasso = reparoAdicional
+            ? "O serviço que você já aprovou continua em andamento e avisaremos quando for concluído."
+            : "Se mudar de ideia ou quiser um novo orçamento, é só falar com a oficina informando o número "
+                + "da ordem de serviço. Você pode retirar o veículo normalmente.";
+        String situacao = reparoAdicional ? null : "Encerrada sem execução (orçamento recusado)";
+        send(order, customer, "orçamento recusado", abertura, proximoPasso, reason, situacao);
     }
 
     @Override
@@ -94,16 +100,16 @@ public class SmtpServiceOrderNotifierAdapter implements ServiceOrderNotifier {
         send(order, customer, "serviço concluído, pronto para retirada",
             "Boa notícia: o serviço no seu veículo foi concluído.",
             "Seu veículo já pode ser retirado na oficina. Leve um documento com foto.",
-            null);
+            null, null);
     }
 
     private void send(ServiceOrder order, Customer customer, String assunto, String abertura,
-                      String proximoPasso, String motivo) {
+                      String proximoPasso, String motivo, String situacao) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);
         message.setTo(customer.getEmail());
         message.setSubject("Oficina Mecânica | OS nº " + order.getId() + ": " + assunto);
-        message.setText(body(order, customer, abertura, proximoPasso, motivo));
+        message.setText(body(order, customer, abertura, proximoPasso, motivo, situacao));
         try {
             mailSender.send(message);
         } catch (MailException e) {
@@ -113,7 +119,7 @@ public class SmtpServiceOrderNotifierAdapter implements ServiceOrderNotifier {
     }
 
     private String body(ServiceOrder order, Customer customer, String abertura, String proximoPasso,
-                        String motivo) {
+                        String motivo, String situacao) {
         StringBuilder texto = new StringBuilder()
             .append("Olá, ").append(firstName(customer)).append("!\n\n")
             .append(abertura).append("\n\n")
@@ -124,7 +130,7 @@ public class SmtpServiceOrderNotifierAdapter implements ServiceOrderNotifier {
         if (veiculo != null) {
             texto.append("Veículo: ").append(veiculo).append('\n');
         }
-        texto.append("Situação: ").append(readable(order)).append('\n');
+        texto.append("Situação: ").append(situacao != null ? situacao : readable(order)).append('\n');
 
         List<String> itens = items(order);
         if (!itens.isEmpty()) {

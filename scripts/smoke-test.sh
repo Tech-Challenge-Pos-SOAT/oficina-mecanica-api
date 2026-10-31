@@ -164,7 +164,7 @@ PY
 ok "listagem ordenada e sem FINISHED/DELIVERED"
 
 if [ "$QUICK" != "1" ]; then
-  step "9b. Prova de ordenacao e estoque: mais 3 OS, uma em cada estado"
+  step "9b. Prova de ordenacao e estoque: mais 4 OS (uma em cada estado e duas RECEBIDAS)"
   STOCK_BEFORE="$(stock)"
   new_order; ORDER_RECEIVED="$ORDER_ID"
   new_order; ORDER_DIAG="$ORDER_ID"
@@ -174,24 +174,25 @@ if [ "$QUICK" != "1" ]; then
   call POST "/api/service-orders/$ORDER_EXEC/budget" 200 "{\"employeeId\":$EMPLOYEE_ID}"
   call POST "/public/service-orders/$ORDER_EXEC/approval" 200 "{\"customerDocument\":\"$DOCUMENT\",\"approved\":true}"
   expect_field status IN_EXECUTION
+  new_order; ORDER_RECEIVED2="$ORDER_ID"   # mesma situacao da RECEBIDA, mas aberta depois
   STOCK_AFTER="$(stock)"
   [ "$STOCK_AFTER" = "$((STOCK_BEFORE - 1))" ] || fail "estoque deveria cair 1 na aprovacao (antes $STOCK_BEFORE, depois $STOCK_AFTER)"
   ok "aprovacao baixou 1 un. do estoque ($STOCK_BEFORE -> $STOCK_AFTER)"
 
   call GET /api/service-orders 200
-  python3 - "$BODY_FILE" "$ORDER_EXEC" "$ORDER_A" "$ORDER_DIAG" "$ORDER_RECEIVED" <<'PY'
+  python3 - "$BODY_FILE" "$ORDER_EXEC" "$ORDER_A" "$ORDER_DIAG" "$ORDER_RECEIVED" "$ORDER_RECEIVED2" <<'PY'
 import json, sys
 orders = [o["id"] for o in json.load(open(sys.argv[1]))]
-expected = [int(x) for x in sys.argv[2:]]   # EXECUCAO, AGUARDANDO, DIAGNOSTICO, RECEBIDA
+expected = [int(x) for x in sys.argv[2:]]   # EXECUCAO, AGUARDANDO, DIAGNOSTICO, RECEBIDA (mais antiga), RECEBIDA (mais nova)
 missing = [i for i in expected if i not in orders]
 if missing:
     sys.exit("OS ausentes da listagem: %s" % missing)
 got = [i for i in orders if i in expected]
 if got != expected:
     sys.exit("ordem errada: esperado %s, veio %s" % (expected, got))
-print("    ordem confirmada (execucao > aguardando > diagnostico > recebida):", got)
+print("    ordem confirmada (execucao > aguardando > diagnostico > recebida; na mesma situacao, a mais antiga primeiro):", got)
 PY
-  ok "4 OS em estados diferentes saem na ordem de prioridade"
+  ok "OS em estados diferentes saem na ordem de prioridade e, no mesmo estado, a mais antiga vem primeiro"
 
   call GET "/api/service-orders?status=AWAITING_APPROVAL" 200
   python3 - "$BODY_FILE" "$ORDER_A" <<'PY'
@@ -207,8 +208,8 @@ PY
   call GET "/api/service-orders?status=NAO_EXISTE" 400
   ok "status invalido devolve 400"
 
-  # Limpeza: cancela as 3 OS de apoio (a em execucao devolve a peca ao estoque).
-  for id in "$ORDER_EXEC" "$ORDER_DIAG" "$ORDER_RECEIVED"; do
+  # Limpeza: cancela as 4 OS de apoio (a em execucao devolve a peca ao estoque).
+  for id in "$ORDER_EXEC" "$ORDER_DIAG" "$ORDER_RECEIVED" "$ORDER_RECEIVED2"; do
     try POST "/api/service-orders/$id/cancellation" "{\"employeeId\":$EMPLOYEE_ID,\"reason\":\"Limpeza do teste de fumaca\"}"
   done
   STOCK_RESTORED="$(stock)"

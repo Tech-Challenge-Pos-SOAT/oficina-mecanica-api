@@ -100,7 +100,7 @@ class SmtpServiceOrderNotifierAdapterTest {
         notifier.notifyBudgetSubmitted(order(), customer());
 
         assertThat(sent().getText())
-            .contains("Fiat Uno (placa ABC-1234)")
+            .contains("Fiat Uno (placa ABC1234)")
             .contains("Troca de óleo: R$ 120,00");
     }
 
